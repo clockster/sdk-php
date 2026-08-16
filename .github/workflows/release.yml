@@ -1,0 +1,53 @@
+name: Release
+
+# Packagist serves whatever the repository has: it is told about the tag by the GitHub App, so
+# there is nothing to upload and no credential anywhere. This runs the checks the tag is claiming
+# to pass, and fails before the tag is believed if the version constant disagrees with it.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: curl, json
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - run: composer lint
+
+      - run: composer analyse
+
+      - run: composer test
+
+      - run: composer operations
+
+      # The tag and the constant must agree, or the User-Agent names a version nobody can install.
+      - name: Check the tag matches the VERSION constant
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(php -r 'require "src/Client.php"; echo Clockster\Client::VERSION;')"
+          test "$tagged" = "$declared" || { echo "::error::Tag $tagged does not match Client::VERSION $declared."; exit 1; }
+
+      - name: Ask Packagist for this version
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -sf "https://repo.packagist.org/p2/clockster/sdk.json" | grep -q "\"version\":\"$GITHUB_REF_NAME\""; then
+              exit 0
+            fi
+
+            sleep 30
+          done
+
+          echo "::error::Packagist does not serve clockster/sdk $GITHUB_REF_NAME yet. Check the repository hook."
+          exit 1

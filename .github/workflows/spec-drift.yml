@@ -1,0 +1,25 @@
+name: Specification drift
+
+# Nightly rather than per pull request: the API deploys on its own schedule, and a change there
+# would otherwise turn unrelated pull requests red.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: curl, json
+          coverage: none
+
+      - run: php scripts/sync_spec.php --check
