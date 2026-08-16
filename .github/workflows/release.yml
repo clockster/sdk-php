@@ -33,10 +33,12 @@ jobs:
       - run: composer operations
 
       # The tag and the constant must agree, or the User-Agent names a version nobody can install.
+      # Read through the autoloader rather than by requiring the file: Client extends a generated
+      # class, and PHP resolves a parent while declaring the child.
       - name: Check the tag matches the VERSION constant
         run: |
           tagged="${GITHUB_REF_NAME#v}"
-          declared="$(php -r 'require "src/Client.php"; echo Clockster\Client::VERSION;')"
+          declared="$(php -r 'require "vendor/autoload.php"; echo Clockster\Client::VERSION;')"
           test "$tagged" = "$declared" || { echo "::error::Tag $tagged does not match Client::VERSION $declared."; exit 1; }
 
       - name: Ask Packagist for this version
