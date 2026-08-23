@@ -376,7 +376,7 @@ namespace Clockster\Generated;
  *     code?: string|null,
  *     latitude?: float|null,
  *     longitude?: float|null,
- *     radius?: int|null,
+ *     radius?: int,
  * }
  * @phpstan-type LocationsUpsertResponse array{
  *     data: list<UpsertOutcome>,
@@ -699,7 +699,7 @@ namespace Clockster\Generated;
  *     time_start?: string|null,
  *     time_end?: string|null,
  *     timezone?: string|null,
- *     priority?: int,
+ *     priority?: 0|1,
  *     active?: bool,
  *     kpi_plan?: float|null,
  *     managers?: list<int>|null,

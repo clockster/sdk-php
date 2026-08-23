@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `employment` is allowed to be.
  *
- * Sent in a $clockster->users->upsert() body.
+ * Sent in a `$clockster->users->upsert()` body, a filter on `$clockster->users->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `UsersEmployment::FULL_TIME` is `'full_time'`, and a static analyser reads the two as one value.

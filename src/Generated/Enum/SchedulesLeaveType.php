@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `leave_type` is allowed to be.
  *
- * Sent in a $clockster->schedules->create() body.
+ * Sent in a `$clockster->schedules->create()` body.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `SchedulesLeaveType::ANNUAL` is `'annual'`, and a static analyser reads the two as one value.

@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `locale` is allowed to be.
  *
- * Sent in a $clockster->users->upsert() body.
+ * Sent in a `$clockster->users->upsert()` body.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `UsersLocale::EN` is `'en'`, and a static analyser reads the two as one value. Closed on the way

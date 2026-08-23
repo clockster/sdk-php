@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `include` is allowed to be.
  *
- * Sent in a filter on $clockster->timesheets->list().
+ * Sent in a filter on `$clockster->timesheets->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `TimesheetsInclude::ACTUAL` is `'actual'`, and a static analyser reads the two as one value.

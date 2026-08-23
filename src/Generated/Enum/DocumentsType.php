@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `type` is allowed to be.
  *
- * Sent in a $clockster->documents->upsert() body, a filter on $clockster->documents->list().
+ * Sent in a `$clockster->documents->upsert()` body, a filter on `$clockster->documents->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `DocumentsType::PASSPORT` is `'passport'`, and a static analyser reads the two as one value.

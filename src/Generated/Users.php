@@ -15,6 +15,7 @@ use Generator;
  *
  * @phpstan-import-type UsersDismissBody from Shapes
  * @phpstan-import-type UsersDismissResponse from Shapes
+ * @phpstan-import-type UsersEmployment from Shapes
  * @phpstan-import-type UsersGetResponse from Shapes
  * @phpstan-import-type UsersInclude from Shapes
  * @phpstan-import-type UsersListResponse from Shapes
@@ -60,6 +61,14 @@ final class Users
      *   a manager and their team's pending vacation requests are cancelled with them.
      * - An offboarding process starts, if the company has one configured.
      * - `date_leave` is filled in with today's date if it was empty.
+     *
+     * What each field is:
+     *
+     * - `users` — The people to dismiss, up to 100 a call.
+     * - `users[].external_id` — Who to dismiss, by your key for them. This or `id`, exactly one
+     *   per item.
+     * - `users[].id` — Who to dismiss, by the id this API issued. This or `external_id`, exactly
+     *   one per item.
      *
      * @param UsersDismissBody $body
      *
@@ -140,7 +149,7 @@ final class Users
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $employment Only people on these employment terms.
+     * @param list<UsersEmployment> $employment Only people on these employment terms.
      * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
      * absent from the answer rather than null.
      *
@@ -208,7 +217,7 @@ final class Users
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $employment Only people on these employment terms.
+     * @param list<UsersEmployment> $employment Only people on these employment terms.
      * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
      * absent from the answer rather than null.
      *
@@ -279,6 +288,42 @@ final class Users
      *
      * A person created here reaches the turnstiles of their location, and every location's
      * devices are told once for the whole batch rather than once per person.
+     *
+     * What each field is:
+     *
+     * - `users` — The people to write, up to 100 a call.
+     * - `users[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `users[].first_name` — Given name. The one field every person must have.
+     * - `users[].middle_name` — Middle name, where the place they live uses one.
+     * - `users[].last_name` — Family name.
+     * - `users[].code` — A short code people read, yours to choose. The listing beside this write
+     *   can filter on it.
+     * - `users[].email` — Their email address.
+     * - `users[].phone` — Their phone number.
+     * - `users[].extra_phone` — A second phone number.
+     * - `users[].role` — Whether the person administers the company or is an employee in it.
+     * - `users[].gender` — Their gender, as the personnel file records it.
+     * - `users[].locale` — Which language the application speaks to them in.
+     * - `users[].timezone` — The zone they work in, as a name — `Asia/Almaty`. A name rather
+     *   than an offset, unlike a schedule or a task, because a person's zone follows the rules of
+     *   the place they are in.
+     * - `users[].date_hire` — The day they started, `YYYY-MM-DD`.
+     * - `users[].date_leave` — The day they leave or left, `YYYY-MM-DD`. Filled in for you on a
+     *   dismissal that does not carry one.
+     * - `users[].date_birth` — Their date of birth, `YYYY-MM-DD`.
+     * - `users[].national_id` — Their national identifier.
+     * - `users[].tax_id` — Their tax identifier.
+     * - `users[].insurance_id` — Their insurance identifier.
+     * - `users[].employment` — The terms they are employed on.
+     * - `users[].responsibility` — Free text about what this person is responsible for.
+     * - `users[].location_id` — The location they are filed under, by id. Required — everybody
+     *   belongs somewhere.
+     * - `users[].locations` — Every other location they may work at, by id, beside the one they
+     *   are filed under.
+     * - `users[].department_id` — The department this is filed against, by id. Null clears it.
+     * - `users[].position_id` — The position this is filed against, by id. Null clears it.
+     * - `users[].user_filters` — The groupings they belong to, by id.
      *
      * @param UsersUpsertBody $body
      *

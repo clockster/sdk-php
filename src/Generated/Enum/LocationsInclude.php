@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `include` is allowed to be.
  *
- * Sent in a filter on $clockster->locations->get(), a filter on $clockster->locations->list().
+ * Sent in a filter on `$clockster->locations->get()`, a filter on `$clockster->locations->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `LocationsInclude::MANAGERS` is `'managers'`, and a static analyser reads the two as one value.

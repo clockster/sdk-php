@@ -317,6 +317,24 @@ final class Documents
      *
      * `author_id` is set to the subject: this token authenticates a company, not a person.
      *
+     * What each field is:
+     *
+     * - `documents` — The documents to write, up to 100 a call.
+     * - `documents[].external_id` — Your own key for this row. Send it on every write and the
+     *   next one updates rather than duplicates.
+     * - `documents[].type` — Which kind of document this is.
+     * - `documents[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `documents[].name` — What to call this document.
+     * - `documents[].contract_number` — The number written on the contract.
+     * - `documents[].employment_type` — The terms the contract is on.
+     * - `documents[].start_date` — The day it begins, `YYYY-MM-DD`.
+     * - `documents[].end_date` — The day it ends, `YYYY-MM-DD`.
+     * - `documents[].expiration_date` — The day it stops being valid, `YYYY-MM-DD`.
+     * - `documents[].parent_external_id` — The document this one hangs under, by your key for
+     *   that one.
+     * - `documents[].file_id` — The stored file this points at, from `POST /files`. Upload the
+     *   bytes first and name the id it answered with.
+     *
      * @param DocumentsUpsertBody $body
      *
      * @return DocumentsUpsertResponse

@@ -50,7 +50,7 @@ function emit(array $endpoints, Shapes $shapes, Enums $enums, Rules $rules): voi
     $tree = namespaces($endpoints);
 
     foreach ($tree as $class => $node) {
-        writeNamespace($class, $node, $endpoints, $shapes, $enums);
+        writeNamespace($class, $node, $endpoints, $shapes);
     }
 }
 
@@ -285,7 +285,7 @@ function constantName(string $value): string
  * @param array{path: string, children: array<string, string>} $node
  * @param list<Endpoint>                                       $endpoints
  */
-function writeNamespace(string $class, array $node, array $endpoints, Shapes $shapes, Enums $enums): void
+function writeNamespace(string $class, array $node, array $endpoints, Shapes $shapes): void
 {
     $root = $class === 'Api';
     $mine = array_values(array_filter(
@@ -312,11 +312,11 @@ function writeNamespace(string $class, array $node, array $endpoints, Shapes $sh
 
     foreach ($mine as $endpoint) {
         $body[] = '';
-        $body[] = method($endpoint, $enums);
+        $body[] = method($endpoint);
 
         if ($endpoint->rowType !== null) {
             $body[] = '';
-            $body[] = walk($endpoint, $enums);
+            $body[] = walk($endpoint);
         }
     }
 
@@ -372,9 +372,9 @@ function imports(string $body, Shapes $shapes): array
     return $found;
 }
 
-function method(Endpoint $endpoint, Enums $enums): string
+function method(Endpoint $endpoint): string
 {
-    $arguments = arguments($endpoint, $enums);
+    $arguments = arguments($endpoint);
     // A body is the only thing Validator reads, so it is the only thing that can be refused here
     // rather than by the API — and then only where the client was built to read one.
     $throws = $endpoint->bodyType === null
@@ -389,10 +389,10 @@ function method(Endpoint $endpoint, Enums $enums): string
     return implode("\n", $lines);
 }
 
-function walk(Endpoint $endpoint, Enums $enums): string
+function walk(Endpoint $endpoint): string
 {
     $arguments = array_values(array_filter(
-        arguments($endpoint, $enums),
+        arguments($endpoint),
         static fn (array $argument): bool => ($argument['wire'] ?? null) !== 'cursor',
     ));
 
@@ -458,7 +458,7 @@ function walk(Endpoint $endpoint, Enums $enums): string
  *
  * @return list<array{name: string, type: string, default: string|null, doc: string, prose: string, wire?: string}>
  */
-function arguments(Endpoint $endpoint, Enums $enums): array
+function arguments(Endpoint $endpoint): array
 {
     $arguments = [];
 
@@ -515,7 +515,7 @@ function arguments(Endpoint $endpoint, Enums $enums): array
     $optional = [];
 
     foreach ($endpoint->query as $parameter) {
-        $held = queryArgument($parameter, $endpoint->resource(), $enums);
+        $held = queryArgument($parameter);
 
         if ($held['default'] === null) {
             $required[] = $held;
@@ -545,7 +545,7 @@ function arguments(Endpoint $endpoint, Enums $enums): array
  *
  * @return array{name: string, type: string, default: string|null, doc: string, prose: string, wire: string}
  */
-function queryArgument(array $parameter, string $namespace, Enums $enums): array
+function queryArgument(array $parameter): array
 {
     $schema = is_array($parameter['schema'] ?? null) ? $parameter['schema'] : [];
     $declared = $schema['type'] ?? 'string';
@@ -556,10 +556,7 @@ function queryArgument(array $parameter, string $namespace, Enums $enums): array
 
     if ($held === 'array') {
         $items = is_array($schema['items'] ?? null) ? $schema['items'] : [];
-        $values = Enums::scalars($items);
-        $item = $values === null
-            ? (SCALARS[$items['type'] ?? 'string'] ?? 'string')
-            : $enums->written($namespace, $values);
+        $item = Enums::reading($items) ?? (SCALARS[$items['type'] ?? 'string'] ?? 'string');
 
         return [
             'name' => camel((string) $parameter['name']),
@@ -572,13 +569,12 @@ function queryArgument(array $parameter, string $namespace, Enums $enums): array
     }
 
     $type = SCALARS[$held] ?? 'string';
-    $values = Enums::scalars($schema);
 
     return [
         'name' => camel((string) $parameter['name']),
         'type' => $required ? $type : '?' . $type,
         'default' => $required ? null : 'null',
-        'doc' => $values === null ? '' : $enums->written($namespace, $values),
+        'doc' => Enums::reading($schema) ?? '',
         'prose' => (string) ($parameter['description'] ?? ''),
         'wire' => (string) $parameter['name'],
     ];

@@ -168,12 +168,7 @@ final class Constraints
                                 'minimum' => -180,
                                 'maximum' => 180,
                             ],
-                            'radius' => [
-                                'type' => 'integer',
-                                'null' => true,
-                                'minimum' => 1,
-                                'maximum' => 30000,
-                            ],
+                            'radius' => ['type' => 'integer', 'minimum' => 50, 'maximum' => 700],
                         ],
                     ],
                 ],
@@ -229,7 +224,10 @@ final class Constraints
                                     'location_id' => ['type' => 'integer', 'null' => true],
                                     'department_id' => ['type' => 'integer', 'null' => true],
                                     'position_id' => ['type' => 'integer', 'null' => true],
-                                    'timezone' => ['type' => 'string'],
+                                    'timezone' => [
+                                        'type' => 'string',
+                                        'pattern' => '^(?:Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])$',
+                                    ],
                                     'start' => [
                                         'type' => 'string',
                                         'null' => true,
@@ -297,7 +295,10 @@ final class Constraints
                                     'location_id' => ['type' => 'integer', 'null' => true],
                                     'department_id' => ['type' => 'integer', 'null' => true],
                                     'position_id' => ['type' => 'integer', 'null' => true],
-                                    'timezone' => ['type' => 'string'],
+                                    'timezone' => [
+                                        'type' => 'string',
+                                        'pattern' => '^(?:Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])$',
+                                    ],
                                     'start' => ['type' => 'string', 'format' => 'date-time'],
                                     'end' => ['type' => 'string', 'format' => 'date-time'],
                                     'time_planned' => [
@@ -376,8 +377,12 @@ final class Constraints
                             'due_date' => ['type' => 'string', 'null' => true, 'format' => 'date'],
                             'time_start' => ['type' => 'string', 'null' => true, 'format' => 'date-time'],
                             'time_end' => ['type' => 'string', 'null' => true, 'format' => 'date-time'],
-                            'timezone' => ['type' => 'string', 'null' => true],
-                            'priority' => ['type' => 'integer', 'enum' => ['0', '1']],
+                            'timezone' => [
+                                'type' => 'string',
+                                'null' => true,
+                                'pattern' => '^(?:Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])$',
+                            ],
+                            'priority' => ['type' => 'integer', 'enum' => [0, 1]],
                             'active' => ['type' => 'boolean'],
                             'kpi_plan' => ['type' => 'number', 'null' => true, 'minimum' => 0],
                             'managers' => [
@@ -470,7 +475,7 @@ final class Constraints
                                 'minLength' => 1,
                                 'maxLength' => 40,
                             ],
-                            'email' => ['type' => 'string', 'null' => true],
+                            'email' => ['type' => 'string', 'null' => true, 'maxLength' => 255],
                             'phone' => [
                                 'type' => 'string',
                                 'null' => true,

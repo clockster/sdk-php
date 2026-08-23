@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `include` is allowed to be.
  *
- * Sent in a filter on $clockster->userRequests->list().
+ * Sent in a filter on `$clockster->userRequests->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `UserRequestsInclude::CONTENT` is `'content'`, and a static analyser reads the two as one value.

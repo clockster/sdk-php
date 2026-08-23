@@ -185,6 +185,18 @@ final class Attendance
      * The shift a mark belongs to is worked out afterwards, so `shift_id` is yours to send
      * only if you already know it.
      *
+     * What each field is:
+     *
+     * - `attendance` — The marks to record, up to 100 a call.
+     * - `attendance[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `attendance[].location_id` — Where the mark was made, by id.
+     * - `attendance[].shift_id` — The shift this mark belongs to, by id, where you know which one
+     *   it is.
+     * - `attendance[].status` — What the mark is: coming in, going out, or going on a break.
+     * - `attendance[].datetime` — When it happened, as `2026-08-01T09:00:00+05:00`. The offset is
+     *   part of it rather than optional. Not in the future, and at most 24 hours late.
+     * - `attendance[].comment` — A note carried alongside, for people to read.
+     *
      * @param AttendanceRecordBody $body
      *
      * @return AttendanceRecordResponse

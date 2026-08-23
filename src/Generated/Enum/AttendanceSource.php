@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `source` is allowed to be.
  *
- * Sent in a filter on $clockster->attendance->list().
+ * Sent in a filter on `$clockster->attendance->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `AttendanceSource::DEVICE` is `'device'`, and a static analyser reads the two as one value.

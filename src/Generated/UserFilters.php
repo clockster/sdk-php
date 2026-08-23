@@ -180,6 +180,15 @@ final class UserFilters
      * **Not matched on the name.** Renaming an entry on your side updates ours, where matching
      * on `title` would have created a second and orphaned the first.
      *
+     * What each field is:
+     *
+     * - `items` — The rows to write. Each carries your own `external_id`, and a row already
+     *   stored under that key is updated rather than added.
+     * - `items[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `items[].title` — The name this is shown under.
+     * - `items[].description` — Free text about this row, for people rather than for your code.
+     *
      * @param UserFiltersUpsertBody $body
      *
      * @return UserFiltersUpsertResponse

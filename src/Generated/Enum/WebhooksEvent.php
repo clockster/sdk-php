@@ -7,8 +7,8 @@ namespace Clockster\Generated\Enum;
 /**
  * What `event` is allowed to be.
  *
- * Sent in a $clockster->webhooks->create() body, a $clockster->webhooks->update() body, a filter on
- * $clockster->webhooks->deliveries->list().
+ * Sent in a `$clockster->webhooks->create()` body, a `$clockster->webhooks->update()` body, a
+ * filter on `$clockster->webhooks->deliveries->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `WebhooksEvent::USER_CREATED` is `'user.created'`, and a static analyser reads the two as one

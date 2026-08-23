@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `type` is allowed to be.
  *
- * Sent in a filter on $clockster->userRequests->list().
+ * Sent in a filter on `$clockster->userRequests->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `UserRequestsType::LEAVE` is `'leave'`, and a static analyser reads the two as one value. Closed

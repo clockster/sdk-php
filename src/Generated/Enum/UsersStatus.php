@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `status` is allowed to be.
  *
- * Sent in a filter on $clockster->users->list().
+ * Sent in a filter on `$clockster->users->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `UsersStatus::ACTIVE` is `'active'`, and a static analyser reads the two as one value. Closed on

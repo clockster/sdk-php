@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `status` is allowed to be.
  *
- * Sent in a $clockster->attendance->record() body, a filter on $clockster->attendance->list().
+ * Sent in a `$clockster->attendance->record()` body, a filter on `$clockster->attendance->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `AttendanceStatus::OUT` is `'out'`, and a static analyser reads the two as one value. Closed on

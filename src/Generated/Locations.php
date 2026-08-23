@@ -205,6 +205,23 @@ final class Locations
      * fill in and we never validate, `external_id` is what the match runs on. Coordinates and
      * radius are set here too.
      *
+     * What each field is:
+     *
+     * - `items` — The rows to write. Each carries your own `external_id`, and a row already
+     *   stored under that key is updated rather than added.
+     * - `items[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `items[].title` — The name this is shown under.
+     * - `items[].description` — Free text about this row, for people rather than for your code.
+     * - `items[].code` — A short code people read, yours to choose. The listing beside this write
+     *   can filter on it.
+     * - `items[].latitude` — Where the location is. A mobile clock-in is checked against this and
+     *   `radius`.
+     * - `items[].longitude` — Where the location is. A mobile clock-in is checked against this
+     *   and `radius`.
+     * - `items[].radius` — How far from those coordinates a mobile clock-in still counts, in
+     *   metres. A location written without one gets 100.
+     *
      * @param LocationsUpsertBody $body
      *
      * @return LocationsUpsertResponse

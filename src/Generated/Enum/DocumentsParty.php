@@ -7,7 +7,7 @@ namespace Clockster\Generated\Enum;
 /**
  * What `party` is allowed to be.
  *
- * Sent in a filter on $clockster->documents->list().
+ * Sent in a filter on `$clockster->documents->list()`.
  *
  * Constants rather than the cases of an enum, so one goes wherever the string goes:
  * `DocumentsParty::EMPLOYEE` is `'employee'`, and a static analyser reads the two as one value.

@@ -244,6 +244,32 @@ final class Tasks
      * `kpi_plan` has no "unset" — the column is NOT NULL with a default of 0, so an omitted
      * plan is a plan of zero.
      *
+     * What each field is:
+     *
+     * - `tasks` — The tasks to write, up to 100 a call.
+     * - `tasks[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `tasks[].title` — The name this is shown under.
+     * - `tasks[].description` — Free text about this row, for people rather than for your code.
+     * - `tasks[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `tasks[].category_id` — The category it belongs to, by id.
+     * - `tasks[].location_id` — The location this is filed against, by id. Null clears it.
+     * - `tasks[].department_id` — The department this is filed against, by id. Null clears it.
+     * - `tasks[].position_id` — The position this is filed against, by id. Null clears it.
+     * - `tasks[].due_date` — The day it is due, `YYYY-MM-DD`.
+     * - `tasks[].time_start` — When in the day it starts, as a clock time `HH:MM:SS`.
+     * - `tasks[].time_end` — When in the day it ends, as a clock time `HH:MM:SS`.
+     * - `tasks[].timezone` — The UTC offset the clock times beside it are read in — `Z`, or
+     *   `+05:00`. An offset rather than a zone name, so the day is fixed to a moment rather than to
+     *   a rule that may be changed later.
+     * - `tasks[].priority` — Whether the task is flagged as a priority: `1` if it is, `0` if not.
+     * - `tasks[].active` — Whether the task is active.
+     * - `tasks[].kpi_plan` — The planned figure this task is measured against.
+     * - `tasks[].managers` — Who may decide on this task, by id. Up to ten.
+     * - `tasks[].items` — The checklist inside this task, in the order given.
+     * - `tasks[].items[].title` — The name this is shown under.
+     * - `tasks[].items[].order` — Where this item sits in the checklist, counting from zero.
+     *
      * @param TasksUpsertBody $body
      *
      * @return TasksUpsertResponse

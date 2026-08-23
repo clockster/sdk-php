@@ -166,27 +166,22 @@ function prose(string $text, string $indent): array
 }
 
 /**
- * The closed sets of values the document names, as constants a caller can reach for.
+ * The closed sets of values, as the document names them.
  *
- * Only what you send is ever closed: every `enum` in the document is on a query parameter or in a
- * request body, and none of them is in an answer. So naming these costs nothing on the way back —
- * a status the API starts answering with tomorrow is still just a string to this client, and only
- * a value this client sends is written against a set.
+ * The name is read rather than worked out. A generator deriving one needs the rule for it, and the
+ * four clients would each need the same rule, in the same shape, kept in step forever — so the
+ * document carries it instead, as `x-clockster-set` beside every enum. What is left here is the
+ * collecting: which names there are, what each holds, and where a caller sends one.
  *
- * A set is named for the resource holding it and the field carrying it, singular: `UsersRole`,
- * `AttendanceStatus`. Two fields holding the same set are one class only where one resource
- * contains the other, so `webhooks` and `webhooks.deliveries` share their event names — where
- * `locations` and `departments` each keep their own `include` though both read `managers` today,
- * since nothing says the two move together.
+ * Only what you send is ever closed. Every enum in the document is on a query parameter or in a
+ * request body and none is in an answer, so naming them costs nothing on the way back: a status the
+ * API starts answering with tomorrow is still just a string to this client.
+ *
+ * A set of numbers is named by the document too and left unnamed here. `0|1` is shorter than any
+ * name for it, and a constant called VALUE_0 tells a reader nothing the value did not.
  */
 final class Enums
 {
-    /** @var array<string, array{namespace: string, word: string, values: list<string>, sites: list<string>}> */
-    private array $sets = [];
-
-    /** @var array<string, string> a resource and a set, to the name they were given */
-    private array $names = [];
-
     /** @var array<string, array{word: string, values: list<string>, sites: list<string>}> */
     private array $classes = [];
 
@@ -200,7 +195,12 @@ final class Enums
             $this->collect($endpoint);
         }
 
-        $this->settle();
+        foreach ($this->classes as $name => $set) {
+            sort($set['sites']);
+            $this->classes[$name] = $set;
+        }
+
+        ksort($this->classes);
     }
 
     /**
@@ -211,6 +211,27 @@ final class Enums
     public function classes(): array
     {
         return $this->classes;
+    }
+
+    /**
+     * How a set is written where a caller meets it, and null where the schema holds no set.
+     *
+     * Under its name where the document gives one and the values are words; written out in full
+     * otherwise, which is what a set of numbers gets.
+     *
+     * @param array<string, mixed> $schema
+     */
+    public static function reading(array $schema): ?string
+    {
+        $values = self::scalars($schema);
+
+        if ($values === null) {
+            return null;
+        }
+
+        $name = $schema['x-clockster-set'] ?? null;
+
+        return is_string($name) && self::named($values) ? $name : self::union($values);
     }
 
     /**
@@ -234,8 +255,7 @@ final class Enums
      *
      * Coherent means the values are all of the type declared beside them. A document saying
      * `{"type": "integer", "enum": ["0", "1"]}` disagrees with itself, and a client that picks a
-     * side bakes the disagreement into everybody's static analysis — so that one is left as the
-     * bare type, loudly, rather than guessed at.
+     * side bakes the disagreement into everybody's static analysis.
      *
      * @param array<string, mixed> $schema
      *
@@ -280,46 +300,25 @@ final class Enums
         return count(array_filter($values, 'is_string')) === count($values);
     }
 
-    /**
-     * How this set is written where this resource carries it: the name it was given, or the values
-     * in full where the set was not collected here — never a name belonging to something else.
-     *
-     * @param list<string> $values
-     */
-    public function written(string $namespace, array $values): string
-    {
-        return $this->names[$this->key($namespace, $values)] ?? self::union($values);
-    }
-
-    /** @param list<string|int|float> $values */
-    private function key(string $namespace, array $values): string
-    {
-        $sorted = $values;
-        sort($sorted);
-
-        return $namespace . "\0" . (string) json_encode($sorted);
-    }
-
     private function collect(Endpoint $endpoint): void
     {
-        $namespace = $endpoint->resource();
         $reached = array_merge($endpoint->group(), [$endpoint->name]);
         $site = '$clockster->' . implode('->', $reached) . '()';
 
         foreach ($endpoint->query as $parameter) {
             $schema = $parameter['schema'] ?? null;
+
             $this->walk(
                 is_array($schema) ? $schema : null,
-                $namespace,
+                'a filter on `' . $site . '`',
                 (string) $parameter['name'],
-                'a filter on ' . $site,
                 [],
             );
         }
 
         $body = $endpoint->spec['requestBody']['content']['application/json']['schema'] ?? null;
 
-        $this->walk(is_array($body) ? $body : null, $namespace, '', 'a ' . $site . ' body', []);
+        $this->walk(is_array($body) ? $body : null, 'a `' . $site . '` body', '', []);
     }
 
     /**
@@ -327,7 +326,7 @@ final class Enums
      * @param list<string>              $seen   the components already entered, so one reaching
      *                                          itself stops rather than recurring forever
      */
-    private function walk(?array $schema, string $namespace, string $word, string $site, array $seen): void
+    private function walk(?array $schema, string $site, string $word, array $seen): void
     {
         if ($schema === null) {
             return;
@@ -343,45 +342,45 @@ final class Enums
             $schemas = $this->document['components']['schemas'] ?? [];
             $held = is_array($schemas) && is_array($schemas[$name] ?? null) ? $schemas[$name] : null;
 
-            $this->walk($held, $namespace, $word, $site, array_merge($seen, [$name]));
+            $this->walk($held, $site, $word, array_merge($seen, [$name]));
 
             return;
         }
 
         if ($word !== '' && isset($schema['enum'])) {
-            $this->remember($namespace, $word, $site, $schema);
+            $this->remember($site, $word, $schema);
         }
 
         foreach (['items', 'additionalProperties'] as $key) {
             if (isset($schema[$key]) && is_array($schema[$key])) {
-                $this->walk($schema[$key], $namespace, $word, $site, $seen);
+                $this->walk($schema[$key], $site, $word, $seen);
             }
         }
 
         foreach (['oneOf', 'anyOf', 'allOf'] as $key) {
             foreach ($schema[$key] ?? [] as $one) {
                 if (is_array($one)) {
-                    $this->walk($one, $namespace, $word, $site, $seen);
+                    $this->walk($one, $site, $word, $seen);
                 }
             }
         }
 
         foreach ($schema['properties'] ?? [] as $key => $property) {
             if (is_array($property)) {
-                $this->walk($property, $namespace, (string) $key, $site, $seen);
+                $this->walk($property, $site, (string) $key, $seen);
             }
         }
     }
 
     /** @param array<string, mixed> $schema */
-    private function remember(string $namespace, string $word, string $site, array $schema): void
+    private function remember(string $site, string $word, array $schema): void
     {
         $values = self::scalars($schema);
+        $name = $schema['x-clockster-set'] ?? null;
 
         if ($values === null) {
             fwrite(STDERR, sprintf(
-                "Left as a bare type: %s.%s names %s, which is not the type declared beside it.\n",
-                $namespace,
+                "Left as a bare type: %s names %s, which is not the type declared beside it.\n",
                 $word,
                 (string) json_encode($schema['enum']),
             ));
@@ -389,106 +388,34 @@ final class Enums
             return;
         }
 
-        // A set of numbers is written where it is used rather than named. `0|1` is shorter than any
-        // name for it, and a constant called VALUE_0 tells a reader nothing the value did not.
-        if (!self::named($values)) {
+        // Named by the document and left unnamed here: a set of numbers is written out where it is
+        // used. A document that names no set at all is one built before this was published.
+        if (!is_string($name) || !self::named($values)) {
             return;
         }
 
         /** @var list<string> $values */
-
-        $held = singularField($word);
-        $key = $namespace . "\0" . $held;
-
-        if (!isset($this->sets[$key])) {
-            $this->sets[$key] = ['namespace' => $namespace, 'word' => $held, 'values' => $values, 'sites' => [$site]];
+        if (!isset($this->classes[$name])) {
+            $this->classes[$name] = ['word' => singularField($word), 'values' => $values, 'sites' => [$site]];
 
             return;
         }
 
-        // The same field of the same resource, naming a different set in two places. One name
-        // cannot mean both, and guessing which is which is worse than saying so.
-        if ($this->sets[$key]['values'] !== $values) {
+        // One name over two different sets would publish constants for one of them and check
+        // against the other. The document has a test against this; so does this.
+        if ($this->classes[$name]['values'] !== $values) {
             fail(sprintf(
-                '%s.%s names two different sets: %s and %s. Name one of them in OVERRIDES.',
-                $namespace,
-                $held,
-                (string) json_encode($this->sets[$key]['values']),
+                '%s names two different sets: %s and %s.',
+                $name,
+                (string) json_encode($this->classes[$name]['values']),
                 (string) json_encode($values),
             ));
         }
 
-        if (!in_array($site, $this->sets[$key]['sites'], true)) {
-            $this->sets[$key]['sites'][] = $site;
+        if (!in_array($site, $this->classes[$name]['sites'], true)) {
+            $this->classes[$name]['sites'][] = $site;
         }
     }
-
-    /**
-     * Which sets share a class. Grouped by the field and the values, and merged only where one
-     * resource is inside another: `Webhooks` and `WebhooksDeliveries` are the same event names
-     * under the outer name, where three unrelated resources reading `managers` stay three classes.
-     */
-    private function settle(): void
-    {
-        $groups = [];
-
-        foreach ($this->sets as $set) {
-            $groups[$set['word'] . "\0" . $this->key('', $set['values'])][] = $set;
-        }
-
-        ksort($groups);
-
-        foreach ($groups as $group) {
-            usort($group, static fn (array $left, array $right): int
-                => [strlen($left['namespace']), $left['namespace']] <=> [strlen($right['namespace']), $right['namespace']]);
-
-            $outermost = $group[0]['namespace'];
-            $nested = true;
-
-            foreach ($group as $set) {
-                $nested = $nested && str_starts_with($set['namespace'], $outermost);
-            }
-
-            if ($nested) {
-                $sites = [];
-
-                foreach ($group as $set) {
-                    $sites = array_merge($sites, $set['sites']);
-                }
-
-                $this->claim($outermost . pascal($group[0]['word']), $group[0]['values'], $sites, $group);
-
-                continue;
-            }
-
-            foreach ($group as $set) {
-                $this->claim($set['namespace'] . pascal($set['word']), $set['values'], $set['sites'], [$set]);
-            }
-        }
-
-        ksort($this->classes);
-    }
-
-    /**
-     * @param list<string>                                                                                  $values
-     * @param list<string>                                                                                   $sites
-     * @param list<array{namespace: string, word: string, values: list<string>, sites: list<string>}> $sets
-     */
-    private function claim(string $name, array $values, array $sites, array $sets): void
-    {
-        if (isset($this->classes[$name])) {
-            fail($name . ' is claimed by two sets. Name one of them in OVERRIDES.');
-        }
-
-        sort($sites);
-
-        $this->classes[$name] = ['word' => $sets[0]['word'], 'values' => $values, 'sites' => $sites];
-
-        foreach ($sets as $set) {
-            $this->names[$this->key($set['namespace'], $values)] = $name;
-        }
-    }
-
 }
 
 /**
@@ -508,8 +435,6 @@ final class Shapes
     /** @var array<string, true> */
     private array $components = [];
 
-    private string $within = '';
-
     /**
      * The sets are declared before anything else, so a shape can never take a name one of them
      * holds, and every file naming one imports it the way it imports a shape.
@@ -524,14 +449,6 @@ final class Shapes
         }
     }
 
-    /**
-     * Which resource the shapes being built belong to. A set is written under its own name only
-     * where that resource is the one carrying it.
-     */
-    public function within(string $namespace): void
-    {
-        $this->within = $namespace;
-    }
 
     /** @return list<string> the names, in the order they were declared */
     public function names(): array
@@ -609,10 +526,10 @@ final class Shapes
             return $this->object($schema, $hint);
         }
 
-        $values = Enums::scalars($schema);
+        $written = Enums::reading($schema);
 
-        if ($values !== null) {
-            return $this->enums->written($this->within, $values);
+        if ($written !== null) {
+            return $written;
         }
 
         return SCALARS[$declared] ?? 'mixed';
@@ -966,15 +883,6 @@ final class Endpoint
         }
     }
 
-    /**
-     * The resource a set found here belongs to. The namespace for all but the handful of
-     * operations hanging off the root, which are their own.
-     */
-    public function resource(): string
-    {
-        return $this->namespace === '' ? pascal($this->name) : $this->namespace;
-    }
-
     /** The chain of namespace property names, outermost first. */
     public function group(): array
     {
@@ -1129,7 +1037,6 @@ $rules = new Rules($endpoints, $document);
 $shapes = new Shapes($document, $enums);
 
 foreach ($endpoints as $endpoint) {
-    $shapes->within($endpoint->resource());
     $endpoint->types($shapes);
 }
 
