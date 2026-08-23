@@ -13,8 +13,11 @@ use Generator;
  * The operations of `$clockster->userRequests`.
  *
  * @phpstan-import-type UserRequestsGetResponse from Shapes
+ * @phpstan-import-type UserRequestsInclude from Shapes
  * @phpstan-import-type UserRequestsListResponse from Shapes
  * @phpstan-import-type UserRequestsListRow from Shapes
+ * @phpstan-import-type UserRequestsStatus from Shapes
+ * @phpstan-import-type UserRequestsType from Shapes
  */
 final class UserRequests
 {
@@ -86,13 +89,13 @@ final class UserRequests
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
-     * @param list<string> $types Only rows of these types.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<UserRequestsType> $types Only rows of these types.
+     * @param list<UserRequestsStatus> $statuses Only rows in these states.
      * @param list<string> $subtypes Only rows of these subtypes, which narrow a type further.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UserRequestsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return UserRequestsListResponse
      *
@@ -135,13 +138,13 @@ final class UserRequests
      * again.
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
-     * @param list<string> $types Only rows of these types.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<UserRequestsType> $types Only rows of these types.
+     * @param list<UserRequestsStatus> $statuses Only rows in these states.
      * @param list<string> $subtypes Only rows of these subtypes, which narrow a type further.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UserRequestsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return \Generator<int, UserRequestsListRow>
      *

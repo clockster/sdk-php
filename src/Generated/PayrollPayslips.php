@@ -14,6 +14,7 @@ use Generator;
  *
  * @phpstan-import-type PayrollPayslipsListResponse from Shapes
  * @phpstan-import-type PayrollPayslipsListRow from Shapes
+ * @phpstan-import-type PayrollPayslipsStatus from Shapes
  */
 final class PayrollPayslips
 {
@@ -51,7 +52,7 @@ final class PayrollPayslips
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param list<int> $users Only rows belonging to these people, by id.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<PayrollPayslipsStatus> $statuses Only rows in these states.
      * @param list<string> $months Only these months, as YYYY-MM.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      *
@@ -93,7 +94,7 @@ final class PayrollPayslips
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param list<int> $users Only rows belonging to these people, by id.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<PayrollPayslipsStatus> $statuses Only rows in these states.
      * @param list<string> $months Only these months, as YYYY-MM.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      *

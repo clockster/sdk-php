@@ -70,6 +70,29 @@ $clockster->users->upsert(['users' => [[
 The same holds when reading: `array_key_exists('department', $user)` asks whether you requested it
 with `include`, where `$user['department'] === null` says the employee has none.
 
+Data from anywhere else has a fourth idea, and it is the empty string. A blank cell in a CSV, an
+untouched input, a column somebody's export leaves empty: each of them means "nothing here" rather
+than "store nothing here". Sent as it is, it overwrites a name somebody typed into the web
+application with nothing, and there is no undoing that. `Write::filled()` is the one line that keeps
+the difference:
+
+```php
+use Clockster\Write;
+
+$clockster->users->upsert(['users' => [Write::filled([
+    'external_id' => $row['external_id'],
+    'first_name' => $row['first_name'],
+    'role' => UsersRole::EMPLOYEE,
+    'location_id' => $locations[$row['location_code']],
+    'email' => $row['email'],       // blank in the file, so not sent, so not overwritten
+    'position_id' => null,          // null is kept: clearing is a thing you may mean
+])]]);
+```
+
+It drops the keys holding an empty string and nothing else — `null`, `0`, `false` and `[]` are all
+values and all stay. Nested rows are walked, so one call covers a person, a batch of them, or a
+whole body.
+
 ## Types
 
 Every request body, query and answer is described by a PHPStan array shape in
@@ -84,6 +107,65 @@ Run PHPStan or Psalm and a misspelled key or a missing required one is an error 
 `422`. Without a static analyser they are documentation, and your editor still reads them for
 completion. Nothing is enforced at run time: the shapes describe what the document says, not
 something this package confirmed.
+
+## Sets of values
+
+Where a field takes one of a fixed set, the set has a name and a class of constants under
+`Clockster\Generated\Enum`:
+
+```php
+use Clockster\Generated\Enum\UsersInclude;
+use Clockster\Generated\Enum\UsersRole;
+use Clockster\Generated\Enum\UsersStatus;
+
+$clockster->users->upsert(['users' => [['role' => UsersRole::EMPLOYEE, /* … */]]]);
+$clockster->users->list(status: UsersStatus::ACTIVE, include: [UsersInclude::LOCATION]);
+```
+
+Constants rather than native enums, so one goes wherever the string goes: `UsersRole::EMPLOYEE`
+**is** `'employee'`, and a static analyser reads the two as one value. `UsersRole::values()` answers
+the lot, in the order the document names them, which is what a dropdown or a check against a file
+wants.
+
+Every set is on something you send, and none is in an answer. That is deliberate on the API's part
+and it is why naming them costs nothing: a `status` we start answering with next year reaches your
+code as the string it is, where a closed type would have refused it. So write against the set and
+read whatever arrives.
+
+## Reading a body before it goes
+
+Off by default. A client built with `validate: true` reads a body against the document first and
+refuses one it says is wrong, without sending it:
+
+```php
+use Clockster\Exception\InvalidBodyException;
+
+$clockster = new Client(getenv('CLOCKSTER_TOKEN'), validate: true);
+
+try {
+    $clockster->users->upsert(['users' => $people]);
+} catch (InvalidBodyException $refused) {
+    // ['body.users.4.first_nane' => ['is not a field the document names here. It names …']]
+    report($refused->errors());
+}
+```
+
+It catches what a `422` would, in the place the body was written rather than against a batch of a
+hundred: a misspelled field, a value outside its set, a required one nobody filled in, a length or a
+batch size over the limit, a date that is not a day. `errors()` is shaped exactly as
+`ValidationException::errors()` is, so one handler reads a refusal from either side — and an
+`InvalidBodyException` means nothing was sent, so there is nothing to undo.
+
+It is off by default on purpose. The document describes the API rather than being it, and a body
+this refuses may be one the API would have taken; a refusal this package invented is one nobody can
+act on. Turn it on where you develop and in CI, leave it off in production. The shapes above say the
+same thing earlier and for free — this is for the run where nobody ran an analyser.
+
+The validator can also be called on its own, against a body nothing is about to send:
+
+```php
+Clockster\Validator::check('POST', '/company/v3/users/upsert', ['users' => $people]);
+```
 
 ## Paging
 
@@ -129,6 +211,9 @@ One class per status worth catching: `AuthenticationException` (401), `Forbidden
 
 A call that got no answer at all is a `TransportException` instead, and it is the one case worth
 retrying blind: the request may have been applied.
+
+One refusal is not the API's: an `InvalidBodyException` is this package declining to send a body,
+and only where you asked it to look — see above.
 
 ## Retries and idempotency
 
@@ -204,6 +289,7 @@ $clockster = new Client(
     baseUrl: 'https://demo.clockster.com',  // a demo stand instead of production
     timeout: 60.0,                          // seconds, applied to each request
     userAgent: 'acme-hr/1.4',               // names your integration in our request log
+    validate: true,                         // read a body against the document before sending it
 );
 ```
 
@@ -221,7 +307,9 @@ point.
 ## Generated from the document
 
 `src/Generated` is written by `scripts/generate.php` from `openapi/company-v3.json`, and committed
-— an API change appears in review as the lines of the client it moves. To refresh:
+— an API change appears in review as the lines of the client it moves. The operations, the shapes,
+the sets of values under `Enum` and the rules the validator reads all come out of the one document,
+so none of the four can say a different thing from the others. To refresh:
 
 ```bash
 composer spec generate check

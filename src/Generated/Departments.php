@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -14,6 +15,7 @@ use Generator;
  *
  * @phpstan-import-type DepartmentsDeleteResponse from Shapes
  * @phpstan-import-type DepartmentsGetResponse from Shapes
+ * @phpstan-import-type DepartmentsInclude from Shapes
  * @phpstan-import-type DepartmentsListResponse from Shapes
  * @phpstan-import-type DepartmentsListRow from Shapes
  * @phpstan-import-type DepartmentsUpsertBody from Shapes
@@ -58,8 +60,8 @@ final class Departments
      * the managers. Somebody else's id is a `404`.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DepartmentsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return DepartmentsGetResponse
      *
@@ -89,8 +91,8 @@ final class Departments
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DepartmentsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return DepartmentsListResponse
      *
@@ -129,8 +131,8 @@ final class Departments
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DepartmentsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return \Generator<int, DepartmentsListRow>
      *
@@ -182,7 +184,7 @@ final class Departments
      *
      * @return DepartmentsUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

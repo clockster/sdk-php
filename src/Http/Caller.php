@@ -8,11 +8,13 @@ use Clockster\Exception\ApiException;
 use Clockster\Exception\AuthenticationException;
 use Clockster\Exception\ConflictException;
 use Clockster\Exception\ForbiddenException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\NotFoundException;
 use Clockster\Exception\RateLimitException;
 use Clockster\Exception\ServerException;
 use Clockster\Exception\TransportException;
 use Clockster\Exception\ValidationException;
+use Clockster\Validator;
 use JsonException;
 
 /**
@@ -37,6 +39,7 @@ final class Caller
         private readonly string $baseUrl,
         private readonly string $userAgent,
         private readonly Transport $transport,
+        private readonly bool $validate = false,
     ) {
     }
 
@@ -46,8 +49,10 @@ final class Caller
      *
      * @return array<string, mixed> the parsed answer, or an empty array where there was no body
      *
-     * @throws ApiException       when the API refused the call
-     * @throws TransportException when no answer came back, or one that is not JSON
+     * @throws ApiException         when the API refused the call
+     * @throws TransportException   when no answer came back, or one that is not JSON
+     * @throws InvalidBodyException where the client was built to read a body first, and this one
+     *                              is not what the document describes
      */
     public function call(
         string $method,
@@ -57,6 +62,12 @@ final class Caller
         ?Upload $upload = null,
         ?string $idempotencyKey = null,
     ): array {
+        // Only where a caller asked for it, and nothing goes out when it says no. See
+        // Clockster\Validator for why that is off by default.
+        if ($this->validate && $body !== null) {
+            Validator::check($method, $path, $body);
+        }
+
         $headers = [
             // Read per call rather than held from construction, so a rotated key does not need a
             // new client.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -12,10 +13,13 @@ use Generator;
 /**
  * The operations of `$clockster->attendance`.
  *
+ * @phpstan-import-type AttendanceInclude from Shapes
  * @phpstan-import-type AttendanceListResponse from Shapes
  * @phpstan-import-type AttendanceListRow from Shapes
  * @phpstan-import-type AttendanceRecordBody from Shapes
  * @phpstan-import-type AttendanceRecordResponse from Shapes
+ * @phpstan-import-type AttendanceSource from Shapes
+ * @phpstan-import-type AttendanceStatus from Shapes
  */
 final class Attendance
 {
@@ -52,11 +56,11 @@ final class Attendance
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $locations Only these locations, by id.
-     * @param list<string> $statuses Only rows in these states.
-     * @param list<string> $sources Only marks recorded this way — a device, the mobile app, or a
-     * person entering them by hand.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<AttendanceStatus> $statuses Only rows in these states.
+     * @param list<AttendanceSource> $sources Only marks recorded this way — a device, the mobile
+     * app, or a person entering them by hand.
+     * @param list<AttendanceInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return AttendanceListResponse
      *
@@ -105,11 +109,11 @@ final class Attendance
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $locations Only these locations, by id.
-     * @param list<string> $statuses Only rows in these states.
-     * @param list<string> $sources Only marks recorded this way — a device, the mobile app, or a
-     * person entering them by hand.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<AttendanceStatus> $statuses Only rows in these states.
+     * @param list<AttendanceSource> $sources Only marks recorded this way — a device, the mobile
+     * app, or a person entering them by hand.
+     * @param list<AttendanceInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return \Generator<int, AttendanceListRow>
      *
@@ -185,7 +189,7 @@ final class Attendance
      *
      * @return AttendanceRecordResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function record(array $body): array
     {

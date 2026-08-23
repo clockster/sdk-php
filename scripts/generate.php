@@ -13,9 +13,13 @@ declare(strict_types=1);
  * file per namespace holds its operations: `$clockster->users->list(...)`, and a Generator beside
  * each listing that pages on a cursor.
  *
+ * Beside them, one class of constants per closed set of values the document names — every one of
+ * which is on something you send rather than in an answer, so naming them takes nothing away.
+ *
  * Nothing here validates. An answer is the JSON as it arrived; the shapes are documentation a
  * static analyser reads and the interpreter never sees, so a field the API adds tomorrow reaches
- * the caller today rather than being refused on the way in.
+ * the caller today rather than being refused on the way in. What a caller sends can be written
+ * against the document instead, from Constraints.php, and only where it asks for that.
  */
 
 const SPEC = 'openapi/company-v3.json';
@@ -92,6 +96,23 @@ function singular(string $name): string
     return substr($name, 0, -1);
 }
 
+/**
+ * The singular a field is named for, so a filter and the field it filters read as one thing:
+ * `statuses` and `status` are one set, and so are `types` and `type`.
+ */
+function singularField(string $name): string
+{
+    if (str_ends_with($name, 'ses')) {
+        return substr($name, 0, -2);
+    }
+
+    if (str_ends_with($name, 'ss') || str_ends_with($name, 'us') || !str_ends_with($name, 's')) {
+        return $name;
+    }
+
+    return substr($name, 0, -1);
+}
+
 /** `UsersListResponse` plus `data` is `UsersListData`, minus the noise. */
 function childHint(string $parent, string $key): string
 {
@@ -145,6 +166,294 @@ function prose(string $text, string $indent): array
 }
 
 /**
+ * The closed sets of values the document names, as constants a caller can reach for.
+ *
+ * Only what you send is ever closed: every `enum` in the document is on a query parameter or in a
+ * request body, and none of them is in an answer. So naming these costs nothing on the way back —
+ * a status the API starts answering with tomorrow is still just a string to this client, and only
+ * a value this client sends is written against a set.
+ *
+ * A set is named for the resource holding it and the field carrying it, singular: `UsersRole`,
+ * `AttendanceStatus`. Two fields holding the same set are one class only where one resource
+ * contains the other, so `webhooks` and `webhooks.deliveries` share their event names — where
+ * `locations` and `departments` each keep their own `include` though both read `managers` today,
+ * since nothing says the two move together.
+ */
+final class Enums
+{
+    /** @var array<string, array{namespace: string, word: string, values: list<string>, sites: list<string>}> */
+    private array $sets = [];
+
+    /** @var array<string, string> a resource and a set, to the name they were given */
+    private array $names = [];
+
+    /** @var array<string, array{word: string, values: list<string>, sites: list<string>}> */
+    private array $classes = [];
+
+    /**
+     * @param list<Endpoint>       $endpoints
+     * @param array<string, mixed> $document
+     */
+    public function __construct(array $endpoints, private readonly array $document)
+    {
+        foreach ($endpoints as $endpoint) {
+            $this->collect($endpoint);
+        }
+
+        $this->settle();
+    }
+
+    /**
+     * The classes to write, by name.
+     *
+     * @return array<string, array{word: string, values: list<string>, sites: list<string>}>
+     */
+    public function classes(): array
+    {
+        return $this->classes;
+    }
+
+    /** A set written out in full, the way a static analyser reads one. @param list<string> $values */
+    public static function union(array $values): string
+    {
+        return implode('|', array_map(
+            static fn (string $value): string => "'" . str_replace("'", "\\'", $value) . "'",
+            $values,
+        ));
+    }
+
+    /**
+     * The values of a schema where it holds a set of strings, and null where it holds anything else.
+     *
+     * `{"type": "integer", "enum": ["0", "1"]}` is the document disagreeing with itself, and a
+     * client that picks a side bakes the disagreement into everybody's static analysis. Left alone,
+     * loudly, until the document is fixed.
+     *
+     * @param array<string, mixed> $schema
+     *
+     * @return list<string>|null
+     */
+    public static function strings(array $schema): ?array
+    {
+        if (!isset($schema['enum']) || !is_array($schema['enum']) || $schema['enum'] === []) {
+            return null;
+        }
+
+        $values = array_values($schema['enum']);
+        $strings = array_values(array_filter($values, 'is_string'));
+        $declared = $schema['type'] ?? null;
+        $types = is_array($declared) ? $declared : [$declared];
+
+        if (count($strings) === count($values) && in_array('string', $types, true)) {
+            return $strings;
+        }
+
+        return null;
+    }
+
+    /**
+     * How this set is written where this resource carries it: the name it was given, or the values
+     * in full where the set was not collected here — never a name belonging to something else.
+     *
+     * @param list<string> $values
+     */
+    public function written(string $namespace, array $values): string
+    {
+        return $this->names[$this->key($namespace, $values)] ?? self::union($values);
+    }
+
+    private function collect(Endpoint $endpoint): void
+    {
+        $namespace = $endpoint->resource();
+        $reached = array_merge($endpoint->group(), [$endpoint->name]);
+        $site = '$clockster->' . implode('->', $reached) . '()';
+
+        foreach ($endpoint->query as $parameter) {
+            $schema = $parameter['schema'] ?? null;
+            $this->walk(
+                is_array($schema) ? $schema : null,
+                $namespace,
+                (string) $parameter['name'],
+                'a filter on ' . $site,
+                [],
+            );
+        }
+
+        $body = $endpoint->spec['requestBody']['content']['application/json']['schema'] ?? null;
+
+        $this->walk(is_array($body) ? $body : null, $namespace, '', 'a ' . $site . ' body', []);
+    }
+
+    /**
+     * @param array<string, mixed>|null $schema
+     * @param list<string>              $seen   the components already entered, so one reaching
+     *                                          itself stops rather than recurring forever
+     */
+    private function walk(?array $schema, string $namespace, string $word, string $site, array $seen): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        if (isset($schema['$ref']) && is_string($schema['$ref'])) {
+            $name = substr($schema['$ref'], (int) strrpos($schema['$ref'], '/') + 1);
+
+            if (in_array($name, $seen, true)) {
+                return;
+            }
+
+            $schemas = $this->document['components']['schemas'] ?? [];
+            $held = is_array($schemas) && is_array($schemas[$name] ?? null) ? $schemas[$name] : null;
+
+            $this->walk($held, $namespace, $word, $site, array_merge($seen, [$name]));
+
+            return;
+        }
+
+        if ($word !== '' && isset($schema['enum'])) {
+            $this->remember($namespace, $word, $site, $schema);
+        }
+
+        foreach (['items', 'additionalProperties'] as $key) {
+            if (isset($schema[$key]) && is_array($schema[$key])) {
+                $this->walk($schema[$key], $namespace, $word, $site, $seen);
+            }
+        }
+
+        foreach (['oneOf', 'anyOf', 'allOf'] as $key) {
+            foreach ($schema[$key] ?? [] as $one) {
+                if (is_array($one)) {
+                    $this->walk($one, $namespace, $word, $site, $seen);
+                }
+            }
+        }
+
+        foreach ($schema['properties'] ?? [] as $key => $property) {
+            if (is_array($property)) {
+                $this->walk($property, $namespace, (string) $key, $site, $seen);
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $schema */
+    private function remember(string $namespace, string $word, string $site, array $schema): void
+    {
+        $values = self::strings($schema);
+
+        if ($values === null) {
+            fwrite(STDERR, sprintf(
+                "Left as a bare type: %s.%s names %s, which is not a set of strings.\n",
+                $namespace,
+                $word,
+                (string) json_encode($schema['enum']),
+            ));
+
+            return;
+        }
+
+        $held = singularField($word);
+        $key = $namespace . "\0" . $held;
+
+        if (!isset($this->sets[$key])) {
+            $this->sets[$key] = ['namespace' => $namespace, 'word' => $held, 'values' => $values, 'sites' => [$site]];
+
+            return;
+        }
+
+        // The same field of the same resource, naming a different set in two places. One name
+        // cannot mean both, and guessing which is which is worse than saying so.
+        if ($this->sets[$key]['values'] !== $values) {
+            fail(sprintf(
+                '%s.%s names two different sets: %s and %s. Name one of them in OVERRIDES.',
+                $namespace,
+                $held,
+                (string) json_encode($this->sets[$key]['values']),
+                (string) json_encode($values),
+            ));
+        }
+
+        if (!in_array($site, $this->sets[$key]['sites'], true)) {
+            $this->sets[$key]['sites'][] = $site;
+        }
+    }
+
+    /**
+     * Which sets share a class. Grouped by the field and the values, and merged only where one
+     * resource is inside another: `Webhooks` and `WebhooksDeliveries` are the same event names
+     * under the outer name, where three unrelated resources reading `managers` stay three classes.
+     */
+    private function settle(): void
+    {
+        $groups = [];
+
+        foreach ($this->sets as $set) {
+            $groups[$set['word'] . "\0" . $this->key('', $set['values'])][] = $set;
+        }
+
+        ksort($groups);
+
+        foreach ($groups as $group) {
+            usort($group, static fn (array $left, array $right): int
+                => [strlen($left['namespace']), $left['namespace']] <=> [strlen($right['namespace']), $right['namespace']]);
+
+            $outermost = $group[0]['namespace'];
+            $nested = true;
+
+            foreach ($group as $set) {
+                $nested = $nested && str_starts_with($set['namespace'], $outermost);
+            }
+
+            if ($nested) {
+                $sites = [];
+
+                foreach ($group as $set) {
+                    $sites = array_merge($sites, $set['sites']);
+                }
+
+                $this->claim($outermost . pascal($group[0]['word']), $group[0]['values'], $sites, $group);
+
+                continue;
+            }
+
+            foreach ($group as $set) {
+                $this->claim($set['namespace'] . pascal($set['word']), $set['values'], $set['sites'], [$set]);
+            }
+        }
+
+        ksort($this->classes);
+    }
+
+    /**
+     * @param list<string>                                                                                  $values
+     * @param list<string>                                                                                   $sites
+     * @param list<array{namespace: string, word: string, values: list<string>, sites: list<string>}> $sets
+     */
+    private function claim(string $name, array $values, array $sites, array $sets): void
+    {
+        if (isset($this->classes[$name])) {
+            fail($name . ' is claimed by two sets. Name one of them in OVERRIDES.');
+        }
+
+        sort($sites);
+
+        $this->classes[$name] = ['word' => $sets[0]['word'], 'values' => $values, 'sites' => $sites];
+
+        foreach ($sets as $set) {
+            $this->names[$this->key($set['namespace'], $values)] = $name;
+        }
+    }
+
+    /** @param list<string> $values */
+    private function key(string $namespace, array $values): string
+    {
+        $sorted = $values;
+        sort($sorted);
+
+        return $namespace . "\0" . (string) json_encode($sorted);
+    }
+}
+
+/**
  * Every shape the document implies, named once and declared in the order they were needed.
  */
 final class Shapes
@@ -161,9 +470,29 @@ final class Shapes
     /** @var array<string, true> */
     private array $components = [];
 
-    /** @param array<string, mixed> $document */
-    public function __construct(private readonly array $document)
+    private string $within = '';
+
+    /**
+     * The sets are declared before anything else, so a shape can never take a name one of them
+     * holds, and every file naming one imports it the way it imports a shape.
+     *
+     * @param array<string, mixed> $document
+     */
+    public function __construct(private readonly array $document, private readonly Enums $enums)
     {
+        foreach ($this->enums->classes() as $name => $set) {
+            $this->taken[$name] = true;
+            $this->blocks[$name] = sprintf('@phpstan-type %s %s', $name, Enums::union($set['values']));
+        }
+    }
+
+    /**
+     * Which resource the shapes being built belong to. A set is written under its own name only
+     * where that resource is the one carrying it.
+     */
+    public function within(string $namespace): void
+    {
+        $this->within = $namespace;
     }
 
     /** @return list<string> the names, in the order they were declared */
@@ -208,6 +537,13 @@ final class Shapes
         $nullable = in_array('null', $types, true);
         $rest = array_values(array_filter($types, static fn ($one): bool => $one !== 'null'));
 
+        // A field the document types as null and nothing else. It is not an absence of information:
+        // `links.first` on a cursor paginator is null on every page there will ever be, and saying
+        // `mixed` about it asks the caller to handle a value that cannot arrive.
+        if ($rest === [] && $nullable) {
+            return 'null';
+        }
+
         if ($rest === []) {
             return 'mixed';
         }
@@ -233,6 +569,12 @@ final class Shapes
 
         if ($declared === 'object') {
             return $this->object($schema, $hint);
+        }
+
+        $values = Enums::strings($schema);
+
+        if ($values !== null) {
+            return $this->enums->written($this->within, $values);
         }
 
         return SCALARS[$declared] ?? 'mixed';
@@ -358,6 +700,159 @@ final class Shapes
 }
 
 /**
+ * What the document says a body must be, in the little the validator understands.
+ *
+ * A pruned copy rather than the schema itself: the keywords kept are the ones Validator checks, so
+ * what is written here and what is enforced cannot drift apart. References are resolved on the way
+ * in, since a caller reading a refusal wants the field, not a pointer.
+ *
+ * Only bodies. A query parameter is an argument with a type on it, and a wrong one does not compile.
+ */
+final class Rules
+{
+    /** The bounds worth carrying: each is a number, and each reads the same on either side. */
+    public const BOUNDS = ['minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems'];
+
+    /** @var array<string, array<string, mixed>> */
+    private array $bodies = [];
+
+    /**
+     * @param list<Endpoint>       $endpoints
+     * @param array<string, mixed> $document
+     */
+    public function __construct(array $endpoints, private readonly array $document)
+    {
+        foreach ($endpoints as $endpoint) {
+            $schema = $endpoint->spec['requestBody']['content']['application/json']['schema'] ?? null;
+
+            if (is_array($schema)) {
+                $this->bodies[$endpoint->method . ' ' . $endpoint->path] = $this->node($schema, []);
+            }
+        }
+
+        ksort($this->bodies);
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    public function bodies(): array
+    {
+        return $this->bodies;
+    }
+
+    /**
+     * @param array<string, mixed> $schema
+     * @param list<string>         $seen
+     *
+     * @return array<string, mixed>
+     */
+    private function node(array $schema, array $seen): array
+    {
+        if (isset($schema['$ref']) && is_string($schema['$ref'])) {
+            $name = substr($schema['$ref'], (int) strrpos($schema['$ref'], '/') + 1);
+
+            // A component reaching itself has no bottom to check against, so it is left unchecked
+            // rather than followed. Nothing in the document does this today.
+            if (in_array($name, $seen, true)) {
+                return [];
+            }
+
+            $schemas = $this->document['components']['schemas'] ?? [];
+            $held = is_array($schemas) && is_array($schemas[$name] ?? null) ? $schemas[$name] : [];
+
+            return $this->node($held, array_merge($seen, [$name]));
+        }
+
+        if (isset($schema['oneOf']) && is_array($schema['oneOf'])) {
+            return $this->choice($schema, $seen);
+        }
+
+        $declared = $schema['type'] ?? null;
+        $types = is_array($declared) ? $declared : ($declared === null ? [] : [$declared]);
+        $rest = array_values(array_filter($types, static fn ($one): bool => $one !== 'null'));
+        $node = [];
+
+        // Two types at once is the document declining to say, and so is none. Either way the value
+        // is carried as it came and only what surrounds it is checked.
+        if (count($rest) === 1) {
+            $node['type'] = (string) $rest[0];
+        }
+
+        if (in_array('null', $types, true)) {
+            $node['null'] = true;
+        }
+
+        if (isset($schema['enum']) && is_array($schema['enum']) && $schema['enum'] !== []) {
+            $node['enum'] = array_values($schema['enum']);
+        }
+
+        if (in_array($schema['format'] ?? null, ['date', 'date-time'], true)) {
+            $node['format'] = (string) $schema['format'];
+        }
+
+        foreach (self::BOUNDS as $bound) {
+            if (isset($schema[$bound]) && is_int($schema[$bound])) {
+                $node[$bound] = $schema[$bound];
+            }
+        }
+
+        if (($node['type'] ?? '') === 'object' && is_array($schema['properties'] ?? null)) {
+            $required = is_array($schema['required'] ?? null) ? $schema['required'] : [];
+            $node['required'] = array_values(array_map(strval(...), $required));
+            $node['properties'] = [];
+
+            foreach ($schema['properties'] as $key => $property) {
+                $node['properties'][(string) $key] = is_array($property) ? $this->node($property, $seen) : [];
+            }
+        }
+
+        if (($node['type'] ?? '') === 'array' && is_array($schema['items'] ?? null)) {
+            $node['items'] = $this->node($schema['items'], $seen);
+        }
+
+        return $node;
+    }
+
+    /**
+     * A value the document allows more than one shape for.
+     *
+     * Where a discriminator names the field that decides, the branches are kept under the values it
+     * takes: the check is then against the one shape meant rather than against all of them, and a
+     * refusal names the field that is actually wrong. Without one, every branch is tried and the
+     * value has to satisfy some branch.
+     *
+     * @param array<string, mixed> $schema
+     * @param list<string>         $seen
+     *
+     * @return array<string, mixed>
+     */
+    private function choice(array $schema, array $seen): array
+    {
+        $mapping = $schema['discriminator']['mapping'] ?? null;
+        $on = $schema['discriminator']['propertyName'] ?? null;
+
+        if (is_string($on) && is_array($mapping) && $mapping !== []) {
+            $branches = [];
+
+            foreach ($mapping as $value => $ref) {
+                $branches[(string) $value] = $this->node(['$ref' => $ref], $seen);
+            }
+
+            return ['oneOf' => $branches, 'on' => $on];
+        }
+
+        $branches = [];
+
+        foreach ($schema['oneOf'] as $one) {
+            if (is_array($one)) {
+                $branches[] = $this->node($one, $seen);
+            }
+        }
+
+        return ['oneOf' => $branches];
+    }
+}
+
+/**
  * One route, and everything the client needs to call it.
  */
 final class Endpoint
@@ -425,6 +920,15 @@ final class Endpoint
                 default => null,
             };
         }
+    }
+
+    /**
+     * The resource a set found here belongs to. The namespace for all but the handful of
+     * operations hanging off the root, which are their own.
+     */
+    public function resource(): string
+    {
+        return $this->namespace === '' ? pascal($this->name) : $this->namespace;
     }
 
     /** The chain of namespace property names, outermost first. */
@@ -508,12 +1012,23 @@ foreach ($document['paths'] as $path => $item) {
 usort($endpoints, static fn (Endpoint $left, Endpoint $right): int
     => [$left->namespace, $left->name] <=> [$right->namespace, $right->name]);
 
-$shapes = new Shapes($document);
+// Collected before any shape is built: naming a set needs the resource that carries it, which is
+// the endpoint rather than the schema, and a shape referring to one needs the name to exist first.
+$enums = new Enums($endpoints, $document);
+$rules = new Rules($endpoints, $document);
+$shapes = new Shapes($document, $enums);
 
 foreach ($endpoints as $endpoint) {
+    $shapes->within($endpoint->resource());
     $endpoint->types($shapes);
 }
 
-emit($endpoints, $shapes);
+emit($endpoints, $shapes, $enums, $rules);
 
-printf("%d operations, %d shapes.\n", count($endpoints), count($shapes->blocks()));
+printf(
+    "%d operations, %d shapes, %d sets, %d bodies with rules.\n",
+    count($endpoints),
+    count($shapes->blocks()) - count($enums->classes()),
+    count($enums->classes()),
+    count($rules->bodies()),
+);

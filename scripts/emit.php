@@ -17,25 +17,40 @@ namespace Clockster\Generated;
 
 PHP;
 
+const ENUM_HEAD = <<<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Clockster\Generated\Enum;
+
+
+PHP;
+
 /**
  * @param list<Endpoint> $endpoints
  */
-function emit(array $endpoints, Shapes $shapes): void
+function emit(array $endpoints, Shapes $shapes, Enums $enums, Rules $rules): void
 {
-    if (!is_dir(OUT)) {
-        mkdir(OUT, 0o755, true);
-    }
+    foreach ([OUT, OUT . '/Enum'] as $directory) {
+        if (!is_dir($directory)) {
+            mkdir($directory, 0o755, true);
+        }
 
-    foreach (glob(OUT . '/*.php') ?: [] as $stale) {
-        unlink($stale);
+        // Swept rather than overwritten, so a set the document stops naming leaves with it.
+        foreach (glob($directory . '/*.php') ?: [] as $stale) {
+            unlink($stale);
+        }
     }
 
     writeShapes($shapes);
+    writeEnums($enums);
+    writeConstraints($rules);
 
     $tree = namespaces($endpoints);
 
     foreach ($tree as $class => $node) {
-        writeNamespace($class, $node, $endpoints, $shapes);
+        writeNamespace($class, $node, $endpoints, $shapes, $enums);
     }
 }
 
@@ -86,6 +101,10 @@ function writeShapes(Shapes $shapes): void
         ' * They are documentation and nothing else. What a method answers is a plain array, and a key',
         ' * the API adds tomorrow is in it whether or not this file knows the name.',
         ' *',
+        ' * The sets of values come first, written out. Every one of them is on something you send,',
+        ' * never in an answer, so writing a field as one closes nothing you read — and the constants',
+        ' * for each are a class of their own under Enum.',
+        ' *',
     ];
 
     foreach ($shapes->blocks() as $block) {
@@ -101,10 +120,172 @@ function writeShapes(Shapes $shapes): void
 }
 
 /**
+ * What the document says a body must be, as data for Clockster\Validator to walk.
+ *
+ * Nothing reads this unless a caller asks for it, and asking is one argument to the client. The
+ * shapes in Shapes.php say the same thing to a static analyser, which is the better place to hear
+ * it — this is for the run where nobody ran one.
+ */
+function writeConstraints(Rules $rules): void
+{
+    $lines = ['/**'];
+    $lines = array_merge($lines, prose(
+        'What the Company API says each body must be, in the little of the document Validator '
+        . 'checks: which fields a body names, which of them it insists on, what type each takes, '
+        . 'the sets and the bounds and the two date formats.',
+        '',
+    ));
+    $lines[] = ' *';
+    $lines = array_merge($lines, prose(
+        'Generated from ' . SPEC . ' — see scripts/generate.php. Read only where a client was built '
+        . 'with `validate: true`, and not otherwise: a body reaches the API as it was handed over, '
+        . 'and this is a courtesy on the way rather than a gate. Keyed by the method and the path '
+        . 'as the document writes them, so a path holding an id is matched rather than looked up.',
+        '',
+    ));
+    $lines[] = ' */';
+    $lines[] = 'final class Constraints';
+    $lines[] = '{';
+    $lines[] = '    /** @var array<string, array<string, mixed>> */';
+    $lines[] = '    public const BODIES = ' . exported($rules->bodies(), 1) . ';';
+    $lines[] = '}';
+
+    write('Constraints', implode("\n", $lines) . "\n");
+}
+
+/**
+ * A value as the PHP that reads it back. Broken over lines where it does not fit on one, which is
+ * how the rest of this repository is written; pint settles whatever is left.
+ */
+function exported(mixed $value, int $depth = 0): string
+{
+    if (!is_array($value)) {
+        return scalarly($value);
+    }
+
+    if ($value === []) {
+        return '[]';
+    }
+
+    $list = array_is_list($value);
+    $written = [];
+
+    foreach ($value as $key => $held) {
+        $written[] = ($list ? '' : scalarly($key) . ' => ') . exported($held, $depth + 1);
+    }
+
+    // A short list of values reads better as one line than as one line each.
+    $one = '[' . implode(', ', $written) . ']';
+
+    if (strpos($one, "\n") === false && strlen($one) + 4 * ($depth + 1) <= WIDTH) {
+        return $one;
+    }
+
+    $pad = str_repeat('    ', $depth + 1);
+
+    return "[\n" . $pad . implode(",\n" . $pad, $written) . ",\n" . str_repeat('    ', $depth) . ']';
+}
+
+function scalarly(mixed $value): string
+{
+    if (is_string($value)) {
+        return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], $value) . "'";
+    }
+
+    if (is_bool($value)) {
+        return $value ? 'true' : 'false';
+    }
+
+    if (is_int($value) || is_float($value)) {
+        return (string) $value;
+    }
+
+    return 'null';
+}
+
+/** One class of constants per set of values, under Enum so they never crowd the operations. */
+function writeEnums(Enums $enums): void
+{
+    foreach ($enums->classes() as $name => $set) {
+        writeEnum($name, $set);
+    }
+}
+
+/**
+ * The constants are untyped on purpose. A `const string` declares the type and loses the value with
+ * it, where a bare one is read as the literal it holds — which is the whole point, since the field
+ * it goes into is written as the set rather than as a string.
+ *
+ * @param array{word: string, values: list<string>, sites: list<string>} $set
+ */
+function writeEnum(string $name, array $set): void
+{
+    $constants = [];
+    $claimed = [];
+
+    foreach ($set['values'] as $value) {
+        $constant = constantName($value);
+
+        if (isset($claimed[$constant])) {
+            fail(sprintf('%s reads %s for both %s and %s.', $name, $constant, $claimed[$constant], $value));
+        }
+
+        $claimed[$constant] = $value;
+        $constants[] = $constant;
+    }
+
+    $lines = ['/**'];
+    $lines = array_merge($lines, prose(sprintf('What `%s` is allowed to be.', $set['word']), ''));
+    $lines[] = ' *';
+    $lines = array_merge($lines, prose('Sent in ' . implode(', ', $set['sites']) . '.', ''));
+    $lines[] = ' *';
+    $lines = array_merge($lines, prose(sprintf(
+        'Constants rather than the cases of an enum, so one goes wherever the string goes: '
+        . '`%s::%s` is `\'%s\'`, and a static analyser reads the two as one value. Closed on the '
+        . 'way in and only there — an answer naming something this class does not is still a '
+        . 'string, and still reaches you.',
+        $name,
+        $constants[0],
+        $set['values'][0],
+    ), ''));
+    $lines[] = ' */';
+    $lines[] = 'final class ' . $name;
+    $lines[] = '{';
+
+    foreach ($set['values'] as $index => $value) {
+        $lines[] = sprintf("    public const %s = '%s';", $constants[$index], $value);
+    }
+
+    $lines[] = '';
+    $lines[] = sprintf('    /** @return list<%s> */', Enums::union($set['values']));
+    $lines[] = '    public static function values(): array';
+    $lines[] = '    {';
+    $lines[] = '        return [';
+
+    foreach ($constants as $constant) {
+        $lines[] = sprintf('            self::%s,', $constant);
+    }
+
+    $lines[] = '        ];';
+    $lines[] = '    }';
+    $lines[] = '}';
+
+    file_put_contents(OUT . '/Enum/' . $name . '.php', ENUM_HEAD . implode("\n", $lines) . "\n");
+}
+
+/** `user.created` is `USER_CREATED`, and a value opening on a digit is not a name at all. */
+function constantName(string $value): string
+{
+    $written = strtoupper(trim((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $value), '_'));
+
+    return $written === '' || ctype_digit($written[0]) ? 'VALUE_' . $written : $written;
+}
+
+/**
  * @param array{path: string, children: array<string, string>} $node
  * @param list<Endpoint>                                       $endpoints
  */
-function writeNamespace(string $class, array $node, array $endpoints, Shapes $shapes): void
+function writeNamespace(string $class, array $node, array $endpoints, Shapes $shapes, Enums $enums): void
 {
     $root = $class === 'Api';
     $mine = array_values(array_filter(
@@ -131,11 +312,11 @@ function writeNamespace(string $class, array $node, array $endpoints, Shapes $sh
 
     foreach ($mine as $endpoint) {
         $body[] = '';
-        $body[] = method($endpoint, $shapes);
+        $body[] = method($endpoint, $enums);
 
         if ($endpoint->rowType !== null) {
             $body[] = '';
-            $body[] = walk($endpoint);
+            $body[] = walk($endpoint, $enums);
         }
     }
 
@@ -191,10 +372,15 @@ function imports(string $body, Shapes $shapes): array
     return $found;
 }
 
-function method(Endpoint $endpoint, Shapes $shapes): string
+function method(Endpoint $endpoint, Enums $enums): string
 {
-    $arguments = arguments($endpoint);
-    $lines = docblock($endpoint, $arguments, $endpoint->returns, '@throws ApiException|TransportException');
+    $arguments = arguments($endpoint, $enums);
+    // A body is the only thing Validator reads, so it is the only thing that can be refused here
+    // rather than by the API — and then only where the client was built to read one.
+    $throws = $endpoint->bodyType === null
+        ? '@throws ApiException|TransportException'
+        : '@throws ApiException|InvalidBodyException|TransportException';
+    $lines = docblock($endpoint, $arguments, $endpoint->returns, $throws);
 
     $lines[] = opening(sprintf('    public function %s(', $endpoint->name), $arguments, 'array');
     $lines[] = call($endpoint);
@@ -203,10 +389,10 @@ function method(Endpoint $endpoint, Shapes $shapes): string
     return implode("\n", $lines);
 }
 
-function walk(Endpoint $endpoint): string
+function walk(Endpoint $endpoint, Enums $enums): string
 {
     $arguments = array_values(array_filter(
-        arguments($endpoint),
+        arguments($endpoint, $enums),
         static fn (array $argument): bool => ($argument['wire'] ?? null) !== 'cursor',
     ));
 
@@ -272,7 +458,7 @@ function walk(Endpoint $endpoint): string
  *
  * @return list<array{name: string, type: string, default: string|null, doc: string, prose: string, wire?: string}>
  */
-function arguments(Endpoint $endpoint): array
+function arguments(Endpoint $endpoint, Enums $enums): array
 {
     $arguments = [];
 
@@ -329,7 +515,7 @@ function arguments(Endpoint $endpoint): array
     $optional = [];
 
     foreach ($endpoint->query as $parameter) {
-        $held = queryArgument($parameter);
+        $held = queryArgument($parameter, $endpoint->resource(), $enums);
 
         if ($held['default'] === null) {
             $required[] = $held;
@@ -359,7 +545,7 @@ function arguments(Endpoint $endpoint): array
  *
  * @return array{name: string, type: string, default: string|null, doc: string, prose: string, wire: string}
  */
-function queryArgument(array $parameter): array
+function queryArgument(array $parameter, string $namespace, Enums $enums): array
 {
     $schema = is_array($parameter['schema'] ?? null) ? $parameter['schema'] : [];
     $declared = $schema['type'] ?? 'string';
@@ -370,7 +556,10 @@ function queryArgument(array $parameter): array
 
     if ($held === 'array') {
         $items = is_array($schema['items'] ?? null) ? $schema['items'] : [];
-        $item = SCALARS[$items['type'] ?? 'string'] ?? 'string';
+        $values = Enums::strings($items);
+        $item = $values === null
+            ? (SCALARS[$items['type'] ?? 'string'] ?? 'string')
+            : $enums->written($namespace, $values);
 
         return [
             'name' => camel((string) $parameter['name']),
@@ -383,12 +572,13 @@ function queryArgument(array $parameter): array
     }
 
     $type = SCALARS[$held] ?? 'string';
+    $values = Enums::strings($schema);
 
     return [
         'name' => camel((string) $parameter['name']),
         'type' => $required ? $type : '?' . $type,
         'default' => $required ? null : 'null',
-        'doc' => '',
+        'doc' => $values === null ? '' : $enums->written($namespace, $values),
         'prose' => (string) ($parameter['description'] ?? ''),
         'wire' => (string) $parameter['name'],
     ];
@@ -555,6 +745,7 @@ function write(string $class, string $body): void
     // What the file names rather than a fixed list: Shapes.php holds no code and imports nothing.
     $candidates = [
         'ApiException' => 'Clockster\Exception\ApiException',
+        'InvalidBodyException' => 'Clockster\Exception\InvalidBodyException',
         'TransportException' => 'Clockster\Exception\TransportException',
         'Caller' => 'Clockster\Http\Caller',
         'new Upload(' => 'Clockster\Http\Upload',

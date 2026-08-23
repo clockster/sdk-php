@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -15,8 +16,10 @@ use Generator;
  * @phpstan-import-type UsersDismissBody from Shapes
  * @phpstan-import-type UsersDismissResponse from Shapes
  * @phpstan-import-type UsersGetResponse from Shapes
+ * @phpstan-import-type UsersInclude from Shapes
  * @phpstan-import-type UsersListResponse from Shapes
  * @phpstan-import-type UsersListRow from Shapes
+ * @phpstan-import-type UsersStatus from Shapes
  * @phpstan-import-type UsersUpsertBody from Shapes
  * @phpstan-import-type UsersUpsertResponse from Shapes
  */
@@ -62,7 +65,7 @@ final class Users
      *
      * @return UsersDismissResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function dismiss(array $body): array
     {
@@ -86,8 +89,8 @@ final class Users
      * Reachable for a dismissed person too.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return UsersGetResponse
      *
@@ -128,7 +131,7 @@ final class Users
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param string|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
+     * @param UsersStatus|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
      * @param list<int> $ids Only these ids.
      * @param list<string> $codes Only these employee codes.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
@@ -138,8 +141,8 @@ final class Users
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
      * @param list<string> $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return UsersListResponse
      *
@@ -196,7 +199,7 @@ final class Users
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param string|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
+     * @param UsersStatus|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
      * @param list<int> $ids Only these ids.
      * @param list<string> $codes Only these employee codes.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
@@ -206,8 +209,8 @@ final class Users
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
      * @param list<string> $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return \Generator<int, UsersListRow>
      *
@@ -281,7 +284,7 @@ final class Users
      *
      * @return UsersUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

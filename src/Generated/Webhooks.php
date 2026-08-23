@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -58,7 +59,7 @@ final class Webhooks
      *
      * @return WebhooksCreateResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function create(array $body, ?string $idempotencyKey = null): array
     {
@@ -238,7 +239,7 @@ final class Webhooks
      *
      * @return WebhooksUpdateResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function update(int $id, array $body): array
     {

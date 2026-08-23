@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -183,7 +184,7 @@ final class Positions
      *
      * @return PositionsUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

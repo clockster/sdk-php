@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -13,8 +14,10 @@ use Generator;
  * The operations of `$clockster->tasks`.
  *
  * @phpstan-import-type TasksGetResponse from Shapes
+ * @phpstan-import-type TasksInclude from Shapes
  * @phpstan-import-type TasksListResponse from Shapes
  * @phpstan-import-type TasksListRow from Shapes
+ * @phpstan-import-type TasksStatus from Shapes
  * @phpstan-import-type TasksUpsertBody from Shapes
  * @phpstan-import-type TasksUpsertResponse from Shapes
  */
@@ -31,8 +34,8 @@ final class Tasks
      * id is a `404`.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return TasksGetResponse
      *
@@ -89,14 +92,14 @@ final class Tasks
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $categories Only rows in these categories.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<TasksStatus> $statuses Only rows in these states.
      * @param bool|null $active Only rows switched on (`true`) or off (`false`). Omit for both.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $dueFrom Due at or after this date (YYYY-MM-DD).
      * @param string|null $dueTo Due at or before this date (YYYY-MM-DD).
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return TasksListResponse
      *
@@ -151,14 +154,14 @@ final class Tasks
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $categories Only rows in these categories.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<TasksStatus> $statuses Only rows in these states.
      * @param bool|null $active Only rows switched on (`true`) or off (`false`). Omit for both.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $dueFrom Due at or after this date (YYYY-MM-DD).
      * @param string|null $dueTo Due at or before this date (YYYY-MM-DD).
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return \Generator<int, TasksListRow>
      *
@@ -245,7 +248,7 @@ final class Tasks
      *
      * @return TasksUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {
