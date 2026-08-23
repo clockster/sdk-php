@@ -556,7 +556,7 @@ function queryArgument(array $parameter, string $namespace, Enums $enums): array
 
     if ($held === 'array') {
         $items = is_array($schema['items'] ?? null) ? $schema['items'] : [];
-        $values = Enums::strings($items);
+        $values = Enums::scalars($items);
         $item = $values === null
             ? (SCALARS[$items['type'] ?? 'string'] ?? 'string')
             : $enums->written($namespace, $values);
@@ -572,7 +572,7 @@ function queryArgument(array $parameter, string $namespace, Enums $enums): array
     }
 
     $type = SCALARS[$held] ?? 'string';
-    $values = Enums::strings($schema);
+    $values = Enums::scalars($schema);
 
     return [
         'name' => camel((string) $parameter['name']),
@@ -636,6 +636,8 @@ function docblock(
         $lines = array_merge($lines, prose($description, '    '));
     }
 
+    $lines = array_merge($lines, fieldNotes($endpoint->fields()));
+
     $documented = [];
 
     foreach ($arguments as $argument) {
@@ -662,6 +664,36 @@ function docblock(
     $lines[] = '     *';
     $lines[] = '     * ' . $throws;
     $lines[] = '     */';
+
+    return $lines;
+}
+
+/**
+ * The fields of a body, listed under their own heading.
+ *
+ * An array shape has nowhere to put prose — `array{external_id?: string}` cannot say what an
+ * external id is — and the body is one argument, so the method's own docblock is where a field's
+ * description ends up being read. Written as the path to the field, so a nested one is findable.
+ *
+ * @param list<array{path: string, prose: string}> $fields
+ *
+ * @return list<string>
+ */
+function fieldNotes(array $fields): array
+{
+    if ($fields === []) {
+        return [];
+    }
+
+    $lines = ['     *', '     * What each field is:', '     *'];
+
+    foreach ($fields as $field) {
+        $written = sprintf('`%s` — %s', $field['path'], $field['prose']);
+
+        foreach (explode("\n", wordwrap($written, WIDTH - 9)) as $index => $line) {
+            $lines[] = '     * ' . ($index === 0 ? '- ' : '  ') . $line;
+        }
+    }
 
     return $lines;
 }

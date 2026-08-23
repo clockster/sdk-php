@@ -213,42 +213,71 @@ final class Enums
         return $this->classes;
     }
 
-    /** A set written out in full, the way a static analyser reads one. @param list<string> $values */
+    /**
+     * A set written out in full, the way a static analyser reads one.
+     *
+     * @param list<string|int|float> $values
+     */
     public static function union(array $values): string
     {
         return implode('|', array_map(
-            static fn (string $value): string => "'" . str_replace("'", "\\'", $value) . "'",
+            static fn (string|int|float $value): string => is_string($value)
+                ? "'" . str_replace("'", "\\'", $value) . "'"
+                : var_export($value, true),
             $values,
         ));
     }
 
     /**
-     * The values of a schema where it holds a set of strings, and null where it holds anything else.
+     * The values of a schema where it holds a set the document states coherently, and null where it
+     * does not.
      *
-     * `{"type": "integer", "enum": ["0", "1"]}` is the document disagreeing with itself, and a
-     * client that picks a side bakes the disagreement into everybody's static analysis. Left alone,
-     * loudly, until the document is fixed.
+     * Coherent means the values are all of the type declared beside them. A document saying
+     * `{"type": "integer", "enum": ["0", "1"]}` disagrees with itself, and a client that picks a
+     * side bakes the disagreement into everybody's static analysis — so that one is left as the
+     * bare type, loudly, rather than guessed at.
      *
      * @param array<string, mixed> $schema
      *
-     * @return list<string>|null
+     * @return list<string|int|float>|null
      */
-    public static function strings(array $schema): ?array
+    public static function scalars(array $schema): ?array
     {
         if (!isset($schema['enum']) || !is_array($schema['enum']) || $schema['enum'] === []) {
             return null;
         }
 
         $values = array_values($schema['enum']);
-        $strings = array_values(array_filter($values, 'is_string'));
         $declared = $schema['type'] ?? null;
         $types = is_array($declared) ? $declared : [$declared];
+        $held = ['string' => 'is_string', 'integer' => 'is_int', 'number' => 'is_float'];
 
-        if (count($strings) === count($values) && in_array('string', $types, true)) {
-            return $strings;
+        foreach ($held as $type => $test) {
+            if (!in_array($type, $types, true)) {
+                continue;
+            }
+
+            $matching = array_values(array_filter($values, $test));
+
+            // `number` covers a whole number written without a point, which JSON reads as an int.
+            if ($type === 'number' && count($matching) !== count($values)) {
+                $matching = array_values(array_filter($values, 'is_numeric'));
+            }
+
+            return count($matching) === count($values) ? $matching : null;
         }
 
         return null;
+    }
+
+    /**
+     * Whether a set is one a class of constants can be built from. A name needs words.
+     *
+     * @param list<string|int|float> $values
+     */
+    public static function named(array $values): bool
+    {
+        return count(array_filter($values, 'is_string')) === count($values);
     }
 
     /**
@@ -260,6 +289,15 @@ final class Enums
     public function written(string $namespace, array $values): string
     {
         return $this->names[$this->key($namespace, $values)] ?? self::union($values);
+    }
+
+    /** @param list<string|int|float> $values */
+    private function key(string $namespace, array $values): string
+    {
+        $sorted = $values;
+        sort($sorted);
+
+        return $namespace . "\0" . (string) json_encode($sorted);
     }
 
     private function collect(Endpoint $endpoint): void
@@ -338,11 +376,11 @@ final class Enums
     /** @param array<string, mixed> $schema */
     private function remember(string $namespace, string $word, string $site, array $schema): void
     {
-        $values = self::strings($schema);
+        $values = self::scalars($schema);
 
         if ($values === null) {
             fwrite(STDERR, sprintf(
-                "Left as a bare type: %s.%s names %s, which is not a set of strings.\n",
+                "Left as a bare type: %s.%s names %s, which is not the type declared beside it.\n",
                 $namespace,
                 $word,
                 (string) json_encode($schema['enum']),
@@ -350,6 +388,14 @@ final class Enums
 
             return;
         }
+
+        // A set of numbers is written where it is used rather than named. `0|1` is shorter than any
+        // name for it, and a constant called VALUE_0 tells a reader nothing the value did not.
+        if (!self::named($values)) {
+            return;
+        }
+
+        /** @var list<string> $values */
 
         $held = singularField($word);
         $key = $namespace . "\0" . $held;
@@ -443,14 +489,6 @@ final class Enums
         }
     }
 
-    /** @param list<string> $values */
-    private function key(string $namespace, array $values): string
-    {
-        $sorted = $values;
-        sort($sorted);
-
-        return $namespace . "\0" . (string) json_encode($sorted);
-    }
 }
 
 /**
@@ -571,7 +609,7 @@ final class Shapes
             return $this->object($schema, $hint);
         }
 
-        $values = Enums::strings($schema);
+        $values = Enums::scalars($schema);
 
         if ($values !== null) {
             return $this->enums->written($this->within, $values);
@@ -789,6 +827,12 @@ final class Rules
             $node['format'] = (string) $schema['format'];
         }
 
+        // Published only where PCRE and ECMA read it the same way — see the API's schema builder —
+        // so what arrives here is safe to hand to preg_match as it stands.
+        if (isset($schema['pattern']) && is_string($schema['pattern'])) {
+            $node['pattern'] = $schema['pattern'];
+        }
+
         foreach (self::BOUNDS as $bound) {
             if (isset($schema[$bound]) && is_int($schema[$bound])) {
                 $node[$bound] = $schema[$bound];
@@ -960,6 +1004,72 @@ final class Endpoint
             $this->returns = $shapes->type($answer, $this->stem . 'Response');
             $this->findCursor($shapes, $answer);
         }
+    }
+
+    /**
+     * What the document says the fields of this body are, as paths a caller can find.
+     *
+     * A shape carries no room for prose — `array{external_id?: string}` has nowhere to say what an
+     * external id is — and the body is one argument, so its own docblock is where a field's
+     * description can be read. Nested and listed fields are written as the path to them:
+     * `users[].external_id`, `tasks[].items[].title`.
+     *
+     * @return list<array{path: string, prose: string}>
+     */
+    public function fields(): array
+    {
+        $schema = $this->spec['requestBody']['content']['application/json']['schema'] ?? null;
+
+        return is_array($schema) ? $this->described($schema, '') : [];
+    }
+
+    /**
+     * @param array<string, mixed> $schema
+     *
+     * @return list<array{path: string, prose: string}>
+     */
+    private function described(array $schema, string $at): array
+    {
+        $found = [];
+
+        // A body the document gives more than one shape for: each branch is walked, and a field two
+        // branches share is named once.
+        foreach ($schema['oneOf'] ?? [] as $one) {
+            if (is_array($one)) {
+                $found = array_merge($found, $this->described($one, $at));
+            }
+        }
+
+        if (isset($schema['items']) && is_array($schema['items'])) {
+            $found = array_merge($found, $this->described($schema['items'], $at . '[]'));
+        }
+
+        foreach ($schema['properties'] ?? [] as $key => $property) {
+            if (!is_array($property)) {
+                continue;
+            }
+
+            $path = $at === '' ? (string) $key : $at . '.' . $key;
+            $prose = $property['description'] ?? null;
+
+            if (is_string($prose) && $prose !== '') {
+                $found[] = ['path' => $path, 'prose' => $prose];
+            }
+
+            $found = array_merge($found, $this->described($property, $path));
+        }
+
+        $seen = [];
+        $once = [];
+
+        foreach ($found as $held) {
+            if (!isset($seen[$held['path']])) {
+                $seen[$held['path']] = true;
+                $once[] = $held;
+            }
+        }
+
+        return $once;
     }
 
     /** Works out whether this listing pages on a cursor, and what one row of it is. */

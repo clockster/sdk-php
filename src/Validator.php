@@ -211,6 +211,15 @@ final class Validator
             $problems[$at][] = sprintf('wants %d characters at most, and this is %d.', $most, $held);
         }
 
+        $pattern = $rules['pattern'] ?? null;
+
+        if (is_string($pattern) && !self::shaped($value, $pattern)) {
+            $problems[$at][] = sprintf(
+                'is not the shape the document gives it, %s. See what it is for beside it.',
+                $pattern,
+            );
+        }
+
         $format = $rules['format'] ?? null;
 
         if ($format === 'date' && !self::dated($value)) {
@@ -378,6 +387,18 @@ final class Validator
         }
 
         return get_debug_type($value);
+    }
+
+    /**
+     * A pattern the document publishes.
+     *
+     * `pattern` searches rather than matching the whole of a value, which is what JSON Schema says
+     * it does; the ones this API publishes anchor themselves. A pattern this engine cannot compile
+     * is left unchecked rather than reported as a failure nobody can act on.
+     */
+    private static function shaped(string $value, string $pattern): bool
+    {
+        return preg_match('#' . str_replace('#', '\\#', $pattern) . '#', $value) !== 0;
     }
 
     /** A real day rather than one that reads like one: the 31st of February is not a date. */
