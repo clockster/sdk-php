@@ -13,9 +13,11 @@ use Generator;
  * The operations of `$clockster->webhooks->deliveries`.
  *
  * @phpstan-import-type WebhooksDeliveriesGetResponse from Shapes
+ * @phpstan-import-type WebhooksDeliveriesInclude from Shapes
  * @phpstan-import-type WebhooksDeliveriesListResponse from Shapes
  * @phpstan-import-type WebhooksDeliveriesListRow from Shapes
  * @phpstan-import-type WebhooksDeliveriesRedeliverResponse from Shapes
+ * @phpstan-import-type WebhooksEvent from Shapes
  */
 final class WebhooksDeliveries
 {
@@ -64,12 +66,12 @@ final class WebhooksDeliveries
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param list<int> $webhooks Only deliveries to these endpoints, by id.
-     * @param list<string> $events Only deliveries of these events.
+     * @param list<WebhooksEvent> $events Only deliveries of these events.
      * @param bool|null $successful Only deliveries that were accepted (`true`) or that were not (`false`).
      * @param bool|null $pending Only deliveries still waiting on a retry (`true`), or only those finished with (`false`).
      * @param string|null $since Only rows from this instant onward (ISO 8601).
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<WebhooksDeliveriesInclude> $include Relations to load, comma-separated. Anything
+     * not named is absent from the answer rather than null.
      *
      * @return WebhooksDeliveriesListResponse
      *
@@ -113,12 +115,12 @@ final class WebhooksDeliveries
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param list<int> $webhooks Only deliveries to these endpoints, by id.
-     * @param list<string> $events Only deliveries of these events.
+     * @param list<WebhooksEvent> $events Only deliveries of these events.
      * @param bool|null $successful Only deliveries that were accepted (`true`) or that were not (`false`).
      * @param bool|null $pending Only deliveries still waiting on a retry (`true`), or only those finished with (`false`).
      * @param string|null $since Only rows from this instant onward (ISO 8601).
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<WebhooksDeliveriesInclude> $include Relations to load, comma-separated. Anything
+     * not named is absent from the answer rather than null.
      *
      * @return \Generator<int, WebhooksDeliveriesListRow>
      *

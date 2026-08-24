@@ -12,6 +12,7 @@ use Generator;
 /**
  * The operations of `$clockster->timesheets`.
  *
+ * @phpstan-import-type TimesheetsInclude from Shapes
  * @phpstan-import-type TimesheetsListResponse from Shapes
  * @phpstan-import-type TimesheetsListRow from Shapes
  */
@@ -58,8 +59,8 @@ final class Timesheets
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param string|null $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TimesheetsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return TimesheetsListResponse
      *
@@ -110,8 +111,8 @@ final class Timesheets
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param string|null $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TimesheetsInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return \Generator<int, TimesheetsListRow>
      *

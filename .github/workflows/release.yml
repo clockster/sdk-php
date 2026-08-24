@@ -8,7 +8,8 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
+  # write, so the tag gets a release with the changelog's section for it.
+  contents: write
 
 jobs:
   publish:
@@ -41,6 +42,20 @@ jobs:
           declared="$(php -r 'require "vendor/autoload.php"; echo Clockster\Client::VERSION;')"
           test "$tagged" = "$declared" || { echo "::error::Tag $tagged does not match Client::VERSION $declared."; exit 1; }
 
+      # The notes are the changelog's section for this tag: written with the change and reviewed
+      # with it, rather than from memory once it is out. No section, no release.
+      - name: Read the release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v want="## $version" '
+            $0 == want { inside = 1; next }
+            inside && /^## / { exit }
+            inside { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+
+          grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" \
+            || { echo "::error::CHANGELOG.md has no section for $version."; exit 1; }
+
       - name: Ask Packagist for this version
         run: |
           for attempt in 1 2 3 4 5; do
@@ -53,3 +68,8 @@ jobs:
 
           echo "::error::Packagist does not serve clockster/sdk $GITHUB_REF_NAME yet. Check the repository hook."
           exit 1
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"

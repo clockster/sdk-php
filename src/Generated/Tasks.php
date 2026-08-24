@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -13,8 +14,10 @@ use Generator;
  * The operations of `$clockster->tasks`.
  *
  * @phpstan-import-type TasksGetResponse from Shapes
+ * @phpstan-import-type TasksInclude from Shapes
  * @phpstan-import-type TasksListResponse from Shapes
  * @phpstan-import-type TasksListRow from Shapes
+ * @phpstan-import-type TasksStatus from Shapes
  * @phpstan-import-type TasksUpsertBody from Shapes
  * @phpstan-import-type TasksUpsertResponse from Shapes
  */
@@ -31,8 +34,8 @@ final class Tasks
      * id is a `404`.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return TasksGetResponse
      *
@@ -89,14 +92,14 @@ final class Tasks
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $categories Only rows in these categories.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<TasksStatus> $statuses Only rows in these states.
      * @param bool|null $active Only rows switched on (`true`) or off (`false`). Omit for both.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $dueFrom Due at or after this date (YYYY-MM-DD).
      * @param string|null $dueTo Due at or before this date (YYYY-MM-DD).
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return TasksListResponse
      *
@@ -151,14 +154,14 @@ final class Tasks
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $categories Only rows in these categories.
-     * @param list<string> $statuses Only rows in these states.
+     * @param list<TasksStatus> $statuses Only rows in these states.
      * @param bool|null $active Only rows switched on (`true`) or off (`false`). Omit for both.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $dueFrom Due at or after this date (YYYY-MM-DD).
      * @param string|null $dueTo Due at or before this date (YYYY-MM-DD).
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<TasksInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return \Generator<int, TasksListRow>
      *
@@ -241,11 +244,37 @@ final class Tasks
      * `kpi_plan` has no "unset" — the column is NOT NULL with a default of 0, so an omitted
      * plan is a plan of zero.
      *
+     * What each field is:
+     *
+     * - `tasks` — The tasks to write, up to 100 a call.
+     * - `tasks[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `tasks[].title` — The name this is shown under.
+     * - `tasks[].description` — Free text about this row, for people rather than for your code.
+     * - `tasks[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `tasks[].category_id` — The category it belongs to, by id.
+     * - `tasks[].location_id` — The location this is filed against, by id. Null clears it.
+     * - `tasks[].department_id` — The department this is filed against, by id. Null clears it.
+     * - `tasks[].position_id` — The position this is filed against, by id. Null clears it.
+     * - `tasks[].due_date` — The day it is due, `YYYY-MM-DD`.
+     * - `tasks[].time_start` — When in the day it starts, as a clock time `HH:MM:SS`.
+     * - `tasks[].time_end` — When in the day it ends, as a clock time `HH:MM:SS`.
+     * - `tasks[].timezone` — The UTC offset the clock times beside it are read in — `Z`, or
+     *   `+05:00`. An offset rather than a zone name, so the day is fixed to a moment rather than to
+     *   a rule that may be changed later.
+     * - `tasks[].priority` — Whether the task is flagged as a priority: `1` if it is, `0` if not.
+     * - `tasks[].active` — Whether the task is active.
+     * - `tasks[].kpi_plan` — The planned figure this task is measured against.
+     * - `tasks[].managers` — Who may decide on this task, by id. Up to ten.
+     * - `tasks[].items` — The checklist inside this task, in the order given.
+     * - `tasks[].items[].title` — The name this is shown under.
+     * - `tasks[].items[].order` — Where this item sits in the checklist, counting from zero.
+     *
      * @param TasksUpsertBody $body
      *
      * @return TasksUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 use Clockster\Client;
 use Clockster\Exception\ValidationException;
+use Clockster\Generated\Enum\UsersRole;
+use Clockster\Generated\Enum\UsersStatus;
+use Clockster\Write;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -110,34 +113,23 @@ function locationsByCode(Client $clockster, array $source): array
  * @param array<string, string> $row
  * @param array<string, int>    $locations
  *
- * @return array{external_id: string, first_name: string, role: string, location_id: int,
+ * @return array{external_id: string, first_name: string, role: 'employee', location_id: int,
  *               last_name?: string, email?: string, phone?: string}
  */
 function person(array $row, array $locations): array
 {
-    $person = [
+    // A column the file leaves blank is a column it has nothing to say about, and an empty string
+    // says something else: it would blank a name somebody typed into the web application.
+    // Write::filled() keeps the two apart — a blank cell is not sent, so the stored value stays.
+    return Write::filled([
         'external_id' => $row['external_id'],
         'first_name' => $row['first_name'],
-        'role' => 'employee',
+        'role' => UsersRole::EMPLOYEE,
         'location_id' => $locations[$row['location_code'] ?? ''] ?? 0,
-    ];
-
-    // Sent only where the file has something to say: an empty string is not an absent value, and
-    // writing one would blank a field somebody filled in the web application. A key left out is
-    // not written at all, so the stored value stays.
-    if (($row['last_name'] ?? '') !== '') {
-        $person['last_name'] = $row['last_name'];
-    }
-
-    if (($row['email'] ?? '') !== '') {
-        $person['email'] = $row['email'];
-    }
-
-    if (($row['phone'] ?? '') !== '') {
-        $person['phone'] = $row['phone'];
-    }
-
-    return $person;
+        'last_name' => $row['last_name'] ?? '',
+        'email' => $row['email'] ?? '',
+        'phone' => $row['phone'] ?? '',
+    ]);
 }
 
 /**
@@ -151,7 +143,7 @@ function dismissed(Client $clockster, array $keys): array
 {
     $leaving = [];
 
-    foreach ($clockster->users->listAll(perPage: BATCH, status: 'active') as $employee) {
+    foreach ($clockster->users->listAll(perPage: BATCH, status: UsersStatus::ACTIVE) as $employee) {
         $externalId = $employee['external_id'];
 
         if ($externalId !== null && !isset($keys[$externalId])) {

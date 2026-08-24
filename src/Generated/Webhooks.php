@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -53,12 +54,26 @@ final class Webhooks
      * `sha256=` HMAC-SHA256 of `timestamp + "." + rawBody` under the secret. The body is
      * `{"id", "event", "occurred_at", "data"}`.
      *
+     * What each field is:
+     *
+     * - `title` — What to call this endpoint, so a list of them reads.
+     * - `url` — Where deliveries are posted. `http` or `https`.
+     * - `contact_email` — An address to reach you about this endpoint.
+     * - `events` — Which events this endpoint receives. At least one, and no repeats.
+     * - `auth_basic` — Send deliveries with HTTP basic authentication. Not alongside
+     *   `auth_token`.
+     * - `auth_basic.username` — The user for `auth_basic`.
+     * - `auth_basic.password` — The password for `auth_basic`.
+     * - `auth_token` — Send deliveries carrying this bearer token. Not alongside `auth_basic`.
+     * - `active` — Whether the endpoint receives deliveries. False stops them without deleting
+     *   it.
+     *
      * @param WebhooksCreateBody $body
      * @param string|null $idempotencyKey A value of your own, so a retry of this write is answered with the first result rather than performed again.
      *
      * @return WebhooksCreateResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function create(array $body, ?string $idempotencyKey = null): array
     {
@@ -233,12 +248,26 @@ final class Webhooks
      * changed, so what the history counted no longer describes what is there. This is how an
      * endpoint switched off by repeated failures is put back into service.
      *
+     * What each field is:
+     *
+     * - `title` — What to call this endpoint, so a list of them reads.
+     * - `url` — Where deliveries are posted. `http` or `https`.
+     * - `contact_email` — An address to reach you about this endpoint.
+     * - `events` — Which events this endpoint receives. At least one, and no repeats.
+     * - `auth_basic` — Send deliveries with HTTP basic authentication. Not alongside
+     *   `auth_token`.
+     * - `auth_basic.username` — The user for `auth_basic`.
+     * - `auth_basic.password` — The password for `auth_basic`.
+     * - `auth_token` — Send deliveries carrying this bearer token. Not alongside `auth_basic`.
+     * - `active` — Whether the endpoint receives deliveries. False stops them without deleting
+     *   it.
+     *
      * @param int $id The id of the row, as this API issued it.
      * @param WebhooksUpdateBody $body
      *
      * @return WebhooksUpdateResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function update(int $id, array $body): array
     {

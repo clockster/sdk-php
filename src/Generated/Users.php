@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -14,9 +15,12 @@ use Generator;
  *
  * @phpstan-import-type UsersDismissBody from Shapes
  * @phpstan-import-type UsersDismissResponse from Shapes
+ * @phpstan-import-type UsersEmployment from Shapes
  * @phpstan-import-type UsersGetResponse from Shapes
+ * @phpstan-import-type UsersInclude from Shapes
  * @phpstan-import-type UsersListResponse from Shapes
  * @phpstan-import-type UsersListRow from Shapes
+ * @phpstan-import-type UsersStatus from Shapes
  * @phpstan-import-type UsersUpsertBody from Shapes
  * @phpstan-import-type UsersUpsertResponse from Shapes
  */
@@ -58,11 +62,19 @@ final class Users
      * - An offboarding process starts, if the company has one configured.
      * - `date_leave` is filled in with today's date if it was empty.
      *
+     * What each field is:
+     *
+     * - `users` — The people to dismiss, up to 100 a call.
+     * - `users[].external_id` — Who to dismiss, by your key for them. This or `id`, exactly one
+     *   per item.
+     * - `users[].id` — Who to dismiss, by the id this API issued. This or `external_id`, exactly
+     *   one per item.
+     *
      * @param UsersDismissBody $body
      *
      * @return UsersDismissResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function dismiss(array $body): array
     {
@@ -86,8 +98,8 @@ final class Users
      * Reachable for a dismissed person too.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return UsersGetResponse
      *
@@ -128,7 +140,7 @@ final class Users
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param string|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
+     * @param UsersStatus|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
      * @param list<int> $ids Only these ids.
      * @param list<string> $codes Only these employee codes.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
@@ -137,9 +149,9 @@ final class Users
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersEmployment> $employment Only people on these employment terms.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return UsersListResponse
      *
@@ -196,7 +208,7 @@ final class Users
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
-     * @param string|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
+     * @param UsersStatus|null $status Whether the people who left are in the answer: `active`, `dismissed`, or `all`.
      * @param list<int> $ids Only these ids.
      * @param list<string> $codes Only these employee codes.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
@@ -205,9 +217,9 @@ final class Users
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $employment Only people on these employment terms.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<UsersEmployment> $employment Only people on these employment terms.
+     * @param list<UsersInclude> $include Relations to load, comma-separated. Anything not named is
+     * absent from the answer rather than null.
      *
      * @return \Generator<int, UsersListRow>
      *
@@ -277,11 +289,47 @@ final class Users
      * A person created here reaches the turnstiles of their location, and every location's
      * devices are told once for the whole batch rather than once per person.
      *
+     * What each field is:
+     *
+     * - `users` — The people to write, up to 100 a call.
+     * - `users[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `users[].first_name` — Given name. The one field every person must have.
+     * - `users[].middle_name` — Middle name, where the place they live uses one.
+     * - `users[].last_name` — Family name.
+     * - `users[].code` — A short code people read, yours to choose. The listing beside this write
+     *   can filter on it.
+     * - `users[].email` — Their email address.
+     * - `users[].phone` — Their phone number.
+     * - `users[].extra_phone` — A second phone number.
+     * - `users[].role` — Whether the person administers the company or is an employee in it.
+     * - `users[].gender` — Their gender, as the personnel file records it.
+     * - `users[].locale` — Which language the application speaks to them in.
+     * - `users[].timezone` — The zone they work in, as a name — `Asia/Almaty`. A name rather
+     *   than an offset, unlike a schedule or a task, because a person's zone follows the rules of
+     *   the place they are in.
+     * - `users[].date_hire` — The day they started, `YYYY-MM-DD`.
+     * - `users[].date_leave` — The day they leave or left, `YYYY-MM-DD`. Filled in for you on a
+     *   dismissal that does not carry one.
+     * - `users[].date_birth` — Their date of birth, `YYYY-MM-DD`.
+     * - `users[].national_id` — Their national identifier.
+     * - `users[].tax_id` — Their tax identifier.
+     * - `users[].insurance_id` — Their insurance identifier.
+     * - `users[].employment` — The terms they are employed on.
+     * - `users[].responsibility` — Free text about what this person is responsible for.
+     * - `users[].location_id` — The location they are filed under, by id. Required — everybody
+     *   belongs somewhere.
+     * - `users[].locations` — Every other location they may work at, by id, beside the one they
+     *   are filed under.
+     * - `users[].department_id` — The department this is filed against, by id. Null clears it.
+     * - `users[].position_id` — The position this is filed against, by id. Null clears it.
+     * - `users[].user_filters` — The groupings they belong to, by id.
+     *
      * @param UsersUpsertBody $body
      *
      * @return UsersUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

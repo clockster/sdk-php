@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -14,6 +15,7 @@ use Generator;
  *
  * @phpstan-import-type LocationsDeleteResponse from Shapes
  * @phpstan-import-type LocationsGetResponse from Shapes
+ * @phpstan-import-type LocationsInclude from Shapes
  * @phpstan-import-type LocationsListResponse from Shapes
  * @phpstan-import-type LocationsListRow from Shapes
  * @phpstan-import-type LocationsUpsertBody from Shapes
@@ -66,8 +68,8 @@ final class Locations
      * listing for it answers `200` with an empty array and leaves you counting.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<LocationsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      *
      * @return LocationsGetResponse
      *
@@ -103,8 +105,8 @@ final class Locations
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param string|null $search Free text over the names the section lists.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<LocationsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      * @param list<string> $codes Only these employee codes.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      *
@@ -146,8 +148,8 @@ final class Locations
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $search Free text over the names the section lists.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<LocationsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      * @param list<string> $codes Only these employee codes.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      *
@@ -203,11 +205,28 @@ final class Locations
      * fill in and we never validate, `external_id` is what the match runs on. Coordinates and
      * radius are set here too.
      *
+     * What each field is:
+     *
+     * - `items` — The rows to write. Each carries your own `external_id`, and a row already
+     *   stored under that key is updated rather than added.
+     * - `items[].external_id` — Your own key for this row. Send it on every write and the next
+     *   one updates rather than duplicates.
+     * - `items[].title` — The name this is shown under.
+     * - `items[].description` — Free text about this row, for people rather than for your code.
+     * - `items[].code` — A short code people read, yours to choose. The listing beside this write
+     *   can filter on it.
+     * - `items[].latitude` — Where the location is. A mobile clock-in is checked against this and
+     *   `radius`.
+     * - `items[].longitude` — Where the location is. A mobile clock-in is checked against this
+     *   and `radius`.
+     * - `items[].radius` — How far from those coordinates a mobile clock-in still counts, in
+     *   metres. A location written without one gets 100.
+     *
      * @param LocationsUpsertBody $body
      *
      * @return LocationsUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 
@@ -66,12 +67,17 @@ final class Schedules
      * There is no `title` — one is generated and it means nothing to you. One schedule takes up
      * to 366 dates, 200 people and 8 shifts.
      *
+     * What each field is:
+     *
+     * - `schedules` — The days to write, up to 25 a call. Each is one of three shapes, and `type`
+     *   says which.
+     *
      * @param SchedulesCreateBody $body
      * @param string|null $idempotencyKey A value of your own, so a retry of this write is answered with the first result rather than performed again.
      *
      * @return SchedulesCreateResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function create(array $body, ?string $idempotencyKey = null): array
     {

@@ -25,7 +25,7 @@ use Clockster\Http\Transport;
 final class Client extends Api
 {
     /** As it goes out in the User-Agent. The release workflow checks the tag against it. */
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
 
     /** Production. A demo stand answers the same API at another host. */
     public const DEFAULT_BASE_URL = 'https://api.clockster.com';
@@ -43,6 +43,10 @@ final class Client extends Api
      *                               when several talk to the same company
      * @param Transport|null $transport send the calls some other way than curl — a PSR-18 client,
      *                                  a retrying decorator, a double in a test
+     * @param bool        $validate  read a body against the document before sending it, and refuse
+     *                               one it says is wrong rather than letting the API refuse it.
+     *                               Off, and worth turning on where you develop; see
+     *                               Clockster\Validator for why it is not the default
      */
     public function __construct(
         string $token,
@@ -50,6 +54,7 @@ final class Client extends Api
         float $timeout = self::DEFAULT_TIMEOUT,
         ?string $userAgent = null,
         ?Transport $transport = null,
+        bool $validate = false,
     ) {
         if (trim($token) === '') {
             throw new ClocksterException('A company API key is required. Issue one under Settings, API.');
@@ -60,6 +65,7 @@ final class Client extends Api
             rtrim($baseUrl ?? self::DEFAULT_BASE_URL, '/'),
             $userAgent ?? 'clockster-php/' . self::VERSION,
             $transport ?? new CurlTransport($timeout),
+            $validate,
         ));
     }
 }

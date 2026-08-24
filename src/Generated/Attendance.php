@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -12,10 +13,13 @@ use Generator;
 /**
  * The operations of `$clockster->attendance`.
  *
+ * @phpstan-import-type AttendanceInclude from Shapes
  * @phpstan-import-type AttendanceListResponse from Shapes
  * @phpstan-import-type AttendanceListRow from Shapes
  * @phpstan-import-type AttendanceRecordBody from Shapes
  * @phpstan-import-type AttendanceRecordResponse from Shapes
+ * @phpstan-import-type AttendanceSource from Shapes
+ * @phpstan-import-type AttendanceStatus from Shapes
  */
 final class Attendance
 {
@@ -52,11 +56,11 @@ final class Attendance
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $locations Only these locations, by id.
-     * @param list<string> $statuses Only rows in these states.
-     * @param list<string> $sources Only marks recorded this way — a device, the mobile app, or a
-     * person entering them by hand.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<AttendanceStatus> $statuses Only rows in these states.
+     * @param list<AttendanceSource> $sources Only marks recorded this way — a device, the mobile
+     * app, or a person entering them by hand.
+     * @param list<AttendanceInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return AttendanceListResponse
      *
@@ -105,11 +109,11 @@ final class Attendance
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param list<int> $users Only rows belonging to these people, by id.
      * @param list<int> $locations Only these locations, by id.
-     * @param list<string> $statuses Only rows in these states.
-     * @param list<string> $sources Only marks recorded this way — a device, the mobile app, or a
-     * person entering them by hand.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<AttendanceStatus> $statuses Only rows in these states.
+     * @param list<AttendanceSource> $sources Only marks recorded this way — a device, the mobile
+     * app, or a person entering them by hand.
+     * @param list<AttendanceInclude> $include Relations to load, comma-separated. Anything not
+     * named is absent from the answer rather than null.
      *
      * @return \Generator<int, AttendanceListRow>
      *
@@ -181,11 +185,23 @@ final class Attendance
      * The shift a mark belongs to is worked out afterwards, so `shift_id` is yours to send
      * only if you already know it.
      *
+     * What each field is:
+     *
+     * - `attendance` — The marks to record, up to 100 a call.
+     * - `attendance[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `attendance[].location_id` — Where the mark was made, by id.
+     * - `attendance[].shift_id` — The shift this mark belongs to, by id, where you know which one
+     *   it is.
+     * - `attendance[].status` — What the mark is: coming in, going out, or going on a break.
+     * - `attendance[].datetime` — When it happened, as `2026-08-01T09:00:00+05:00`. The offset is
+     *   part of it rather than optional. Not in the future, and at most 24 hours late.
+     * - `attendance[].comment` — A note carried alongside, for people to read.
+     *
      * @param AttendanceRecordBody $body
      *
      * @return AttendanceRecordResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function record(array $body): array
     {

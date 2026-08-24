@@ -15,6 +15,37 @@ namespace Clockster\Generated;
  * They are documentation and nothing else. What a method answers is a plain array, and a key
  * the API adds tomorrow is in it whether or not this file knows the name.
  *
+ * The sets of values come first, written out. Every one of them is on something you send,
+ * never in an answer, so writing a field as one closes nothing you read — and the constants
+ * for each are a class of their own under Enum.
+ *
+ * @phpstan-type AttendanceInclude 'user'|'location'|'attachments'
+ * @phpstan-type AttendanceSource 'device'|'mobile'|'frontend'|'api'|'system'
+ * @phpstan-type AttendanceStatus 'out'|'in'|'break'
+ * @phpstan-type DepartmentsInclude 'managers'
+ * @phpstan-type DocumentsEmploymentType 'full_time'|'part_time'|'irregular_hours'|'contract_1'|'contract_2'|'apprenticeship'|'traineeship'|'piece_rate'|'probation'|'outstaffing'
+ * @phpstan-type DocumentsInclude 'attachments'|'signers'|'labor_contract'
+ * @phpstan-type DocumentsParty 'employee'|'counterparty'
+ * @phpstan-type DocumentsType 'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'
+ * @phpstan-type LocationsInclude 'managers'
+ * @phpstan-type PayrollPayslipsStatus 'draft'|'approved'|'paid'
+ * @phpstan-type SchedulesLeaveType 'annual'|'unpaid'|'sick'|'unpaid_sick'|'maternity'|'paternity'|'special'|'day_off'|'compensatory'|'personal'|'emergency'|'unexcused_absence'
+ * @phpstan-type SchedulesType 'work'|'free'|'leave'
+ * @phpstan-type TasksInclude 'items'|'managers'|'user'|'author'
+ * @phpstan-type TasksStatus 'created'|'started'|'paused'|'completed'|'incompleted'|'pastdue'
+ * @phpstan-type TimesheetsInclude 'actual'|'variance'|'user'|'location'|'department'|'position'
+ * @phpstan-type UserFiltersInclude 'managers'
+ * @phpstan-type UserRequestsInclude 'content'|'user'|'author'
+ * @phpstan-type UserRequestsStatus 'pending'|'accepted'|'rejected'|'cancelled'|'approval'|'execution'|'signing'
+ * @phpstan-type UserRequestsType 'leave'|'work'|'general'|'finance'
+ * @phpstan-type UsersEmployment 'full_time'|'part_time'|'irregular_hours'|'contract_1'|'contract_2'|'apprenticeship'|'traineeship'|'piece_rate'|'probation'|'outstaffing'
+ * @phpstan-type UsersGender 'male'|'female'|'other'
+ * @phpstan-type UsersInclude 'location'|'locations'|'department'|'position'|'user_filters'|'dismissal'|'meta'
+ * @phpstan-type UsersLocale 'en'|'ru'|'kk'|'uk'|'id'|'uz'|'az'|'fr'|'vi'|'zh'
+ * @phpstan-type UsersRole 'admin'|'employee'
+ * @phpstan-type UsersStatus 'active'|'dismissed'|'all'
+ * @phpstan-type WebhooksDeliveriesInclude 'payload'
+ * @phpstan-type WebhooksEvent 'user.created'|'user.updated'|'user.deleted'|'user.restored'|'user.purged'|'location.created'|'location.updated'|'location.deleted'|'department.created'|'department.updated'|'department.deleted'|'position.created'|'position.updated'|'position.deleted'|'task.created'|'task.completed'|'task.approved'|'task.rejected'|'task.deleted'
  * @phpstan-type MeResponse array{
  *     data: MeData,
  * }
@@ -71,8 +102,8 @@ namespace Clockster\Generated;
  *     created_at: string,
  * }
  * @phpstan-type PageLinks array{
- *     first: mixed,
- *     last: mixed,
+ *     first: null,
+ *     last: null,
  *     prev: string|null,
  *     next: string|null,
  * }
@@ -89,7 +120,7 @@ namespace Clockster\Generated;
  *     user_id: int,
  *     location_id?: int|null,
  *     shift_id?: int|null,
- *     status: string,
+ *     status: AttendanceStatus,
  *     datetime: string,
  *     comment?: string|null,
  * }
@@ -274,11 +305,11 @@ namespace Clockster\Generated;
  * }
  * @phpstan-type DocumentsUpsertDocument array{
  *     external_id: string,
- *     type: string,
+ *     type: DocumentsType,
  *     user_id: int,
  *     name?: string|null,
  *     contract_number?: string|null,
- *     employment_type?: string|null,
+ *     employment_type?: DocumentsEmploymentType|null,
  *     start_date?: string|null,
  *     end_date?: string|null,
  *     expiration_date?: string|null,
@@ -345,7 +376,7 @@ namespace Clockster\Generated;
  *     code?: string|null,
  *     latitude?: float|null,
  *     longitude?: float|null,
- *     radius?: int|null,
+ *     radius?: int,
  * }
  * @phpstan-type LocationsUpsertResponse array{
  *     data: list<UpsertOutcome>,
@@ -453,7 +484,7 @@ namespace Clockster\Generated;
  *     schedules: list<WorkSchedule|FreeSchedule|LeaveSchedule>,
  * }
  * @phpstan-type WorkSchedule array{
- *     type: string,
+ *     type: SchedulesType,
  *     dates: list<string>,
  *     users: list<int>,
  *     location_id?: int|null,
@@ -475,7 +506,7 @@ namespace Clockster\Generated;
  *     position_id?: int|null,
  * }
  * @phpstan-type FreeSchedule array{
- *     type: string,
+ *     type: SchedulesType,
  *     dates: list<string>,
  *     users: list<int>,
  *     location_id?: int|null,
@@ -487,13 +518,13 @@ namespace Clockster\Generated;
  *     time_planned?: int|null,
  * }
  * @phpstan-type LeaveSchedule array{
- *     type: string,
+ *     type: SchedulesType,
  *     dates: list<string>,
  *     users: list<int>,
  *     location_id?: int|null,
  *     department_id?: int|null,
  *     position_id?: int|null,
- *     leave_type: string,
+ *     leave_type: SchedulesLeaveType,
  * }
  * @phpstan-type SchedulesCreateResponse array{
  *     data: list<SchedulesCreateRow>,
@@ -668,7 +699,7 @@ namespace Clockster\Generated;
  *     time_start?: string|null,
  *     time_end?: string|null,
  *     timezone?: string|null,
- *     priority?: int,
+ *     priority?: 0|1,
  *     active?: bool,
  *     kpi_plan?: float|null,
  *     managers?: list<int>|null,
@@ -1145,9 +1176,9 @@ namespace Clockster\Generated;
  *     email?: string|null,
  *     phone?: string|null,
  *     extra_phone?: string|null,
- *     role: string,
- *     gender?: string|null,
- *     locale?: string|null,
+ *     role: UsersRole,
+ *     gender?: UsersGender|null,
+ *     locale?: UsersLocale|null,
  *     timezone?: string|null,
  *     date_hire?: string|null,
  *     date_leave?: string|null,
@@ -1155,7 +1186,7 @@ namespace Clockster\Generated;
  *     national_id?: string|null,
  *     tax_id?: string|null,
  *     insurance_id?: string|null,
- *     employment?: string|null,
+ *     employment?: UsersEmployment|null,
  *     responsibility?: string|null,
  *     location_id: int,
  *     locations?: list<int>|null,
@@ -1170,7 +1201,7 @@ namespace Clockster\Generated;
  *     title?: string|null,
  *     url: string,
  *     contact_email?: string|null,
- *     events: list<string>,
+ *     events: list<WebhooksEvent>,
  *     auth_basic?: WebhooksCreateAuthBasic|null,
  *     auth_token?: string|null,
  *     active: bool,
@@ -1292,7 +1323,7 @@ namespace Clockster\Generated;
  *     title?: string|null,
  *     url: string,
  *     contact_email?: string|null,
- *     events: list<string>,
+ *     events: list<WebhooksEvent>,
  *     auth_basic?: WebhooksUpdateAuthBasic|null,
  *     auth_token?: string|null,
  *     active: bool,

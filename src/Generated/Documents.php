@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Clockster\Generated;
 
 use Clockster\Exception\ApiException;
+use Clockster\Exception\InvalidBodyException;
 use Clockster\Exception\TransportException;
 use Clockster\Http\Caller;
 use Generator;
@@ -13,9 +14,13 @@ use Generator;
  * The operations of `$clockster->documents`.
  *
  * @phpstan-import-type DocumentsDeleteResponse from Shapes
+ * @phpstan-import-type DocumentsEmploymentType from Shapes
  * @phpstan-import-type DocumentsGetResponse from Shapes
+ * @phpstan-import-type DocumentsInclude from Shapes
  * @phpstan-import-type DocumentsListResponse from Shapes
  * @phpstan-import-type DocumentsListRow from Shapes
+ * @phpstan-import-type DocumentsParty from Shapes
+ * @phpstan-import-type DocumentsType from Shapes
  * @phpstan-import-type DocumentsUpsertBody from Shapes
  * @phpstan-import-type DocumentsUpsertResponse from Shapes
  */
@@ -58,8 +63,8 @@ final class Documents
      * id is a `404`.
      *
      * @param int $id The id of the row, as this API issued it.
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DocumentsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      *
      * @return DocumentsGetResponse
      *
@@ -121,7 +126,7 @@ final class Documents
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
      * @param string|null $cursor The `meta.next_cursor` of the previous page. Omit it for the first. A cursor is bound to the filters it was issued under — change them and start again.
-     * @param string|null $party Whose side of the document to read.
+     * @param DocumentsParty|null $party Whose side of the document to read.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
@@ -129,16 +134,17 @@ final class Documents
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $types Only rows of these types.
-     * @param list<string> $employmentTypes Only documents covering these employment terms.
+     * @param list<DocumentsType> $types Only rows of these types.
+     * @param list<DocumentsEmploymentType> $employmentTypes Only documents covering these
+     * employment terms.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      * @param string|null $expiresAfter Expiring after this date (YYYY-MM-DD) — how you find what is about to lapse.
      * @param string|null $expiresBefore Expiring before this date (YYYY-MM-DD).
      * @param string|null $effectiveFrom In force at or after this date (YYYY-MM-DD).
      * @param string|null $effectiveTo In force at or before this date (YYYY-MM-DD).
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DocumentsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      *
      * @return DocumentsListResponse
      *
@@ -201,7 +207,7 @@ final class Documents
      * again.
      *
      * @param int|null $perPage How many rows one page holds. Defaults to 50.
-     * @param string|null $party Whose side of the document to read.
+     * @param DocumentsParty|null $party Whose side of the document to read.
      * @param list<string> $externalIds Only rows carrying these keys of yours. The other half of an
      * upsert: write with your key, read back with it.
      * @param list<int> $users Only rows belonging to these people, by id.
@@ -209,16 +215,17 @@ final class Documents
      * @param list<int> $departments Only these departments, by id.
      * @param list<int> $positions Only these positions, by id.
      * @param list<int> $userFilters Only these user filters, by id.
-     * @param list<string> $types Only rows of these types.
-     * @param list<string> $employmentTypes Only documents covering these employment terms.
+     * @param list<DocumentsType> $types Only rows of these types.
+     * @param list<DocumentsEmploymentType> $employmentTypes Only documents covering these
+     * employment terms.
      * @param string|null $search Free text over the names the section lists.
      * @param string|null $updatedSince Only rows changed at or after this instant (ISO 8601). The cheap way to sync: ask for what moved, not for everything.
      * @param string|null $expiresAfter Expiring after this date (YYYY-MM-DD) — how you find what is about to lapse.
      * @param string|null $expiresBefore Expiring before this date (YYYY-MM-DD).
      * @param string|null $effectiveFrom In force at or after this date (YYYY-MM-DD).
      * @param string|null $effectiveTo In force at or before this date (YYYY-MM-DD).
-     * @param list<string> $include Relations to load, comma-separated. Anything not named is absent
-     * from the answer rather than null.
+     * @param list<DocumentsInclude> $include Relations to load, comma-separated. Anything not named
+     * is absent from the answer rather than null.
      *
      * @return \Generator<int, DocumentsListRow>
      *
@@ -310,11 +317,29 @@ final class Documents
      *
      * `author_id` is set to the subject: this token authenticates a company, not a person.
      *
+     * What each field is:
+     *
+     * - `documents` — The documents to write, up to 100 a call.
+     * - `documents[].external_id` — Your own key for this row. Send it on every write and the
+     *   next one updates rather than duplicates.
+     * - `documents[].type` — Which kind of document this is.
+     * - `documents[].user_id` — The employee this belongs to, by the id this API issued.
+     * - `documents[].name` — What to call this document.
+     * - `documents[].contract_number` — The number written on the contract.
+     * - `documents[].employment_type` — The terms the contract is on.
+     * - `documents[].start_date` — The day it begins, `YYYY-MM-DD`.
+     * - `documents[].end_date` — The day it ends, `YYYY-MM-DD`.
+     * - `documents[].expiration_date` — The day it stops being valid, `YYYY-MM-DD`.
+     * - `documents[].parent_external_id` — The document this one hangs under, by your key for
+     *   that one.
+     * - `documents[].file_id` — The stored file this points at, from `POST /files`. Upload the
+     *   bytes first and name the id it answered with.
+     *
      * @param DocumentsUpsertBody $body
      *
      * @return DocumentsUpsertResponse
      *
-     * @throws ApiException|TransportException
+     * @throws ApiException|InvalidBodyException|TransportException
      */
     public function upsert(array $body): array
     {
