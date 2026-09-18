@@ -43,8 +43,13 @@ final class DocumentsType
     public const GOODS_RELEASE_NOTE = 'goods_release_note';
     public const RECONCILIATION_ACT = 'reconciliation_act';
     public const RETURN_TO_SUPPLIER = 'return_to_supplier';
+    public const DRIVER_LICENSE = 'driver_license';
+    public const BIRTH_CERTIFICATE = 'birth_certificate';
+    public const MARRIAGE_CERTIFICATE = 'marriage_certificate';
+    public const DIVORCE_CERTIFICATE = 'divorce_certificate';
+    public const CHANGE_FIO_CERTIFICATE = 'change_fio_certificate';
 
-    /** @return list<'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'> */
+    /** @return list<'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'|'driver_license'|'birth_certificate'|'marriage_certificate'|'divorce_certificate'|'change_fio_certificate'> */
     public static function values(): array
     {
         return [
@@ -75,6 +80,11 @@ final class DocumentsType
             self::GOODS_RELEASE_NOTE,
             self::RECONCILIATION_ACT,
             self::RETURN_TO_SUPPLIER,
+            self::DRIVER_LICENSE,
+            self::BIRTH_CERTIFICATE,
+            self::MARRIAGE_CERTIFICATE,
+            self::DIVORCE_CERTIFICATE,
+            self::CHANGE_FIO_CERTIFICATE,
         ];
     }
 }

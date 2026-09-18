@@ -26,7 +26,7 @@ namespace Clockster\Generated;
  * @phpstan-type DocumentsEmploymentType 'full_time'|'part_time'|'irregular_hours'|'contract_1'|'contract_2'|'apprenticeship'|'traineeship'|'piece_rate'|'probation'|'outstaffing'
  * @phpstan-type DocumentsInclude 'attachments'|'signers'|'labor_contract'
  * @phpstan-type DocumentsParty 'employee'|'counterparty'
- * @phpstan-type DocumentsType 'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'
+ * @phpstan-type DocumentsType 'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'|'driver_license'|'birth_certificate'|'marriage_certificate'|'divorce_certificate'|'change_fio_certificate'
  * @phpstan-type LocationsInclude 'managers'
  * @phpstan-type PayrollPayslipsStatus 'draft'|'approved'|'paid'
  * @phpstan-type SchedulesLeaveType 'annual'|'unpaid'|'sick'|'unpaid_sick'|'maternity'|'paternity'|'special'|'day_off'|'compensatory'|'personal'|'emergency'|'unexcused_absence'
