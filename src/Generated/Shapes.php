@@ -29,6 +29,7 @@ namespace Clockster\Generated;
  * @phpstan-type DocumentsType 'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'|'driver_license'|'birth_certificate'|'marriage_certificate'|'divorce_certificate'|'change_fio_certificate'
  * @phpstan-type LocationsInclude 'managers'
  * @phpstan-type PayrollPayslipsStatus 'draft'|'approved'|'paid'
+ * @phpstan-type PayrollSingleAdjustmentsType 'service_charge'|'single_addition_pre_tax'|'single_addition_post_tax'|'single_loan'|'single_deduction_pre_tax'|'single_deduction_post_tax'
  * @phpstan-type SchedulesLeaveType 'annual'|'unpaid'|'sick'|'unpaid_sick'|'maternity'|'paternity'|'special'|'day_off'|'compensatory'|'personal'|'emergency'|'unexcused_absence'
  * @phpstan-type SchedulesType 'work'|'free'|'leave'
  * @phpstan-type TasksInclude 'items'|'managers'|'user'|'author'
@@ -441,6 +442,53 @@ namespace Clockster\Generated;
  *     per_page: int,
  *     next_cursor: string|null,
  *     prev_cursor: string|null,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsCreateBody array{
+ *     adjustments: list<PayrollSingleAdjustmentsCreateAdjustment>,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsCreateAdjustment array{
+ *     user_id: int,
+ *     type: PayrollSingleAdjustmentsType,
+ *     amount: float,
+ *     date: string,
+ *     title?: string|null,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsCreateResponse array{
+ *     data: list<PayrollSingleAdjustmentsCreateRow>,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsCreateRow array{
+ *     id: int,
+ *     user: PayrollSingleAdjustmentsCreateRowUser,
+ *     type: string,
+ *     title: string|null,
+ *     amount: float|null,
+ *     date: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsCreateRowUser array{
+ *     id: int,
+ *     external_id: string|null,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsDeleteResponse array{
+ *     data: DeleteOutcome,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsListResponse array{
+ *     data: list<PayrollSingleAdjustmentsListRow>,
+ *     links: PageLinks,
+ *     meta: PageMeta,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsListRow array{
+ *     id: int,
+ *     user: PayrollSingleAdjustmentsListRowUser,
+ *     type: string,
+ *     title: string|null,
+ *     amount: float|null,
+ *     date: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type PayrollSingleAdjustmentsListRowUser array{
+ *     id: int,
+ *     external_id: string|null,
  * }
  * @phpstan-type PositionsDeleteResponse array{
  *     data: DeleteOutcome,
