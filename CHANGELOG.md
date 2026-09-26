@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0
+
+### May break your build (types only)
+
+Nothing. Three operations and one set are new.
+
+### Changed in the API
+
+Reaches you whether or not you update this package.
+
+- `GET /payroll/payslips` answers the `external_id` of a dismissed employee. It was `null` on their
+  payslips.
+
+### New
+
+- `$clockster->payroll->singleAdjustments`: `list()`, `listAll()`, `create()` and `delete()` over
+  `/payroll/single-adjustments` — one-off additions and deductions that the next calculation of a
+  payslip takes in. `create()` files up to 100 at a time, all or nothing; pass `idempotencyKey:` so a
+  retry does not file them twice.
+- `Clockster\Generated\Enum\PayrollSingleAdjustmentsType`, a constant per type, for `type` on
+  `create()` and the `types` filter.
+
 ## 0.3.0
 
 ### May break your build (types only)
