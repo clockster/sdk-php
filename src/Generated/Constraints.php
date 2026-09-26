@@ -179,6 +179,38 @@ final class Constraints
                 ],
             ],
         ],
+        'POST /company/v3/payroll/single-adjustments' => [
+            'type' => 'object',
+            'required' => ['adjustments'],
+            'properties' => [
+                'adjustments' => [
+                    'type' => 'array',
+                    'minItems' => 1,
+                    'maxItems' => 100,
+                    'items' => [
+                        'type' => 'object',
+                        'required' => ['user_id', 'type', 'amount', 'date'],
+                        'properties' => [
+                            'user_id' => ['type' => 'integer'],
+                            'type' => [
+                                'type' => 'string',
+                                'enum' => [
+                                    'service_charge',
+                                    'single_addition_pre_tax',
+                                    'single_addition_post_tax',
+                                    'single_loan',
+                                    'single_deduction_pre_tax',
+                                    'single_deduction_post_tax',
+                                ],
+                            ],
+                            'amount' => ['type' => 'number', 'minimum' => 0, 'maximum' => 999999999],
+                            'date' => ['type' => 'string', 'format' => 'date'],
+                            'title' => ['type' => 'string', 'null' => true, 'maxLength' => 250],
+                        ],
+                    ],
+                ],
+            ],
+        ],
         'POST /company/v3/positions/upsert' => [
             'type' => 'object',
             'required' => ['items'],
