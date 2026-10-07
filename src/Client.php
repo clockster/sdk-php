@@ -25,7 +25,7 @@ use Clockster\Http\Transport;
 final class Client extends Api
 {
     /** As it goes out in the User-Agent. The release workflow checks the tag against it. */
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.5.0';
 
     /** Production. A demo stand answers the same API at another host. */
     public const DEFAULT_BASE_URL = 'https://api.clockster.com';
