@@ -218,6 +218,7 @@ final class Constraints
                                     'single_loan',
                                     'single_deduction_pre_tax',
                                     'single_deduction_post_tax',
+                                    'withholding',
                                 ],
                             ],
                             'amount' => ['type' => 'number', 'minimum' => 0, 'maximum' => 999999999],
