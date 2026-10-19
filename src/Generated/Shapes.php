@@ -29,7 +29,7 @@ namespace Clockster\Generated;
  * @phpstan-type DocumentsType 'passport'|'cv'|'diploma'|'medical'|'photo'|'other'|'medical_book'|'employment_agreement'|'termination_of_employment_agreement'|'equipment_agreement'|'application'|'order'|'supplementary_agreement'|'job_description'|'nda'|'non_compete_agreement'|'data_processing_agreement'|'act_of_service_acceptance'|'health_and_safety_briefing'|'shift_schedule'|'letter'|'vacation_schedule'|'contract'|'agreement'|'goods_release_note'|'reconciliation_act'|'return_to_supplier'|'driver_license'|'birth_certificate'|'marriage_certificate'|'divorce_certificate'|'change_fio_certificate'|'srts'|'vaccination'|'social_id'|'disability_certificate'|'large_family_certificate'|'asp_certificate'|'tech_passport'|'pension'|'rk_passport'|'student_card'|'vnzh'|'pcr_certificate'|'lbg_card'|'insurance_policy'|'hunter'|'oralman'|'attorney'
  * @phpstan-type LocationsInclude 'managers'
  * @phpstan-type PayrollPayslipsStatus 'draft'|'approved'|'paid'
- * @phpstan-type PayrollSingleAdjustmentsType 'service_charge'|'single_addition_pre_tax'|'single_addition_post_tax'|'single_loan'|'single_deduction_pre_tax'|'single_deduction_post_tax'
+ * @phpstan-type PayrollSingleAdjustmentsType 'service_charge'|'single_addition_pre_tax'|'single_addition_post_tax'|'single_loan'|'single_deduction_pre_tax'|'single_deduction_post_tax'|'withholding'
  * @phpstan-type SchedulesLeaveType 'annual'|'unpaid'|'sick'|'unpaid_sick'|'maternity'|'paternity'|'special'|'day_off'|'compensatory'|'personal'|'emergency'|'unexcused_absence'
  * @phpstan-type SchedulesType 'work'|'free'|'leave'
  * @phpstan-type TasksInclude 'items'|'managers'|'user'|'author'

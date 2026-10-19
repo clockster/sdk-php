@@ -23,8 +23,9 @@ final class PayrollSingleAdjustmentsType
     public const SINGLE_LOAN = 'single_loan';
     public const SINGLE_DEDUCTION_PRE_TAX = 'single_deduction_pre_tax';
     public const SINGLE_DEDUCTION_POST_TAX = 'single_deduction_post_tax';
+    public const WITHHOLDING = 'withholding';
 
-    /** @return list<'service_charge'|'single_addition_pre_tax'|'single_addition_post_tax'|'single_loan'|'single_deduction_pre_tax'|'single_deduction_post_tax'> */
+    /** @return list<'service_charge'|'single_addition_pre_tax'|'single_addition_post_tax'|'single_loan'|'single_deduction_pre_tax'|'single_deduction_post_tax'|'withholding'> */
     public static function values(): array
     {
         return [
@@ -34,6 +35,7 @@ final class PayrollSingleAdjustmentsType
             self::SINGLE_LOAN,
             self::SINGLE_DEDUCTION_PRE_TAX,
             self::SINGLE_DEDUCTION_POST_TAX,
+            self::WITHHOLDING,
         ];
     }
 }

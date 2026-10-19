@@ -37,6 +37,10 @@ final class Documents
      *
      * **A document everyone has signed cannot be deleted** — `409`, code `document_signed`.
      *
+     * **A document sent to a counterparty**, by e-mail or a copied signing link, **cannot be
+     * deleted** — `409`, code `document_sent_to_counterparty`. It is withdrawn in the app
+     * instead, as the web app requires.
+     *
      * Another company's id is a `404`.
      *
      * @param int $id The id of the row, as this API issued it.

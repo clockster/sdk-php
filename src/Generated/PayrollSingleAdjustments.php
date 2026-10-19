@@ -46,7 +46,8 @@ final class PayrollSingleAdjustments
      * - `adjustments` — The adjustments to file, up to 100 a call.
      * - `adjustments[].user_id` — The employee this belongs to, by the id this API issued.
      * - `adjustments[].type` — What the amount does: an addition or a deduction, before or after
-     *   tax, a service charge or a one-off loan.
+     *   tax, a service charge, a one-off loan, or a withholding from the take-home pay that leaves
+     *   the company's cost as it is.
      * - `adjustments[].amount` — How much, never negative — `type` says which way it goes. At
      *   most two decimal places.
      * - `adjustments[].date` — The day it is dated, `YYYY-MM-DD`. The payslip whose period holds
@@ -107,6 +108,9 @@ final class PayrollSingleAdjustments
      *
      * `amount` is never negative: `type` says whether it is added or taken off, and whether
      * before or after tax. `date_from` and `date_to` bound the day, inclusive.
+     *
+     * A `withholding` comes off the take-home pay alone, as a loan repayment does: the
+     * company's cost keeps it, where a `single_deduction_post_tax` lowers both.
      *
      * Rows filed in the web application are listed too, and may carry `13th_pay`, which is
      * computed there rather than filed here.
