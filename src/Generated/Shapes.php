@@ -22,6 +22,11 @@ namespace Clockster\Generated;
  * @phpstan-type AttendanceInclude 'user'|'location'|'attachments'
  * @phpstan-type AttendanceSource 'device'|'mobile'|'frontend'|'api'|'system'
  * @phpstan-type AttendanceStatus 'out'|'in'|'break'
+ * @phpstan-type ChecklistsInclude 'items'|'managers'|'users'|'issues'|'comments'|'attachments'|'author'
+ * @phpstan-type ChecklistsItemType 'checkbox'|'boolean'|'option'|'number'|'comment'
+ * @phpstan-type ChecklistsPriority 'low'|'normal'|'high'
+ * @phpstan-type ChecklistsStatus 'created'|'started'|'completed'|'incompleted'|'pastdue'|'pending'
+ * @phpstan-type ChecklistsType 'default'|'audit'
  * @phpstan-type DepartmentsInclude 'managers'
  * @phpstan-type DocumentsEmploymentType 'full_time'|'part_time'|'irregular_hours'|'contract_1'|'contract_2'|'apprenticeship'|'traineeship'|'piece_rate'|'probation'|'outstaffing'
  * @phpstan-type DocumentsInclude 'attachments'|'signers'|'labor_contract'
@@ -135,12 +140,352 @@ namespace Clockster\Generated;
  *     id: int,
  *     result: string,
  * }
- * @phpstan-type DepartmentsDeleteResponse array{
+ * @phpstan-type ChecklistsCreateBody array{
+ *     checklists: list<ChecklistsCreateChecklist>,
+ * }
+ * @phpstan-type ChecklistsCreateChecklist array{
+ *     external_id: string,
+ *     title: string,
+ *     description?: string|null,
+ *     type: ChecklistsType,
+ *     priority: ChecklistsPriority,
+ *     timezone: string,
+ *     date_start: string,
+ *     date_end: string,
+ *     time_start?: string|null,
+ *     time_end?: string|null,
+ *     time_notify?: string|null,
+ *     req_approve?: bool,
+ *     req_notify?: bool,
+ *     geofence?: bool,
+ *     gallery?: bool,
+ *     is_keep_status?: bool,
+ *     min_score?: int|null,
+ *     author_id?: int|null,
+ *     locations?: list<int>|null,
+ *     departments?: list<int>|null,
+ *     positions?: list<int>|null,
+ *     user_filters?: list<int>|null,
+ *     users?: list<int>|null,
+ *     managers?: list<int>|null,
+ *     items: list<ChecklistsCreateChecklistItem>,
+ * }
+ * @phpstan-type ChecklistsCreateChecklistItem array{
+ *     section?: string|null,
+ *     title: string,
+ *     type: ChecklistsItemType,
+ *     is_required: bool,
+ *     photos: int,
+ *     geofence: bool,
+ *     time_start?: string|null,
+ *     time_end?: string|null,
+ *     score?: int|null,
+ *     min_number?: int|null,
+ *     max_number?: int|null,
+ * }
+ * @phpstan-type ChecklistsCreateResponse array{
+ *     data: list<UpsertOutcome>,
+ * }
+ * @phpstan-type UpsertOutcome array{
+ *     external_id: string|null,
+ *     id: int,
+ *     result: string,
+ * }
+ * @phpstan-type ChecklistsDeleteResponse array{
  *     data: DeleteOutcome,
  * }
  * @phpstan-type DeleteOutcome array{
  *     id: int,
  *     result: string,
+ * }
+ * @phpstan-type ChecklistsGetResponse array{
+ *     data: ChecklistsGetData,
+ * }
+ * @phpstan-type ChecklistsGetData array{
+ *     id: int,
+ *     external_id: string|null,
+ *     title: string,
+ *     description: string|null,
+ *     type: string,
+ *     status: string,
+ *     priority: string,
+ *     min_score: int|null,
+ *     score_percent: int,
+ *     template_id: int|null,
+ *     author_id: int|null,
+ *     locations: list<int>,
+ *     departments: list<int>,
+ *     positions: list<int>,
+ *     user_filters: list<int>,
+ *     date_start: string|null,
+ *     date_end: string|null,
+ *     time_start: string|null,
+ *     time_end: string|null,
+ *     timezone: string|null,
+ *     time_notify: string|null,
+ *     req_approve: bool,
+ *     req_notify: bool,
+ *     geofence: bool,
+ *     gallery: bool,
+ *     is_keep_status: bool,
+ *     time_worked: int,
+ *     started_at: string|null,
+ *     completed_at: string|null,
+ *     created_at: string,
+ *     updated_at: string,
+ *     items?: list<ChecklistsGetDataItem>,
+ *     managers?: list<ChecklistsGetDataManager>,
+ *     users?: list<EmployeeShort>,
+ *     issues?: list<ChecklistsGetDataIssue>,
+ *     comments?: list<ChecklistsGetDataComment>,
+ *     attachments?: list<ChecklistsGetDataAttachment>,
+ *     author?: ChecklistsGetDataAuthor|null,
+ * }
+ * @phpstan-type ChecklistsGetDataItem array{
+ *     id: int,
+ *     section: string|null,
+ *     title: string,
+ *     type: string,
+ *     is_required: bool,
+ *     photos: int,
+ *     geofence: bool,
+ *     time_start: string|null,
+ *     time_end: string|null,
+ *     min_number: int|null,
+ *     max_number: int|null,
+ *     value: mixed,
+ *     note: string|null,
+ *     score: int,
+ *     is_completed: bool,
+ *     completed_at: string|null,
+ *     user: ChecklistsGetDataItemUser|null,
+ *     latitude: float|null,
+ *     longitude: float|null,
+ *     has_issue: bool,
+ *     issue: string|null,
+ *     attachments: list<ChecklistsGetDataItemAttachment>,
+ * }
+ * @phpstan-type ChecklistsGetDataItemUser array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsGetDataItemAttachment array{
+ *     id: int,
+ *     name: string,
+ *     description: string|null,
+ *     format: string,
+ *     url: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsGetDataManager array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ *     status: string,
+ *     updated_at: string,
+ * }
+ * @phpstan-type ChecklistsGetDataIssue array{
+ *     id: int,
+ *     item_id: int,
+ *     stage: string,
+ *     severity: string,
+ *     description: string|null,
+ *     reporter_id: int|null,
+ *     assignee_id: int|null,
+ *     due_date: string|null,
+ *     resolved_note: string|null,
+ *     resolved_at: string|null,
+ *     resolved_by: int|null,
+ *     verified_at: string|null,
+ *     verified_by: int|null,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsGetDataComment array{
+ *     id: int,
+ *     parent_id: int|null,
+ *     user: ChecklistsGetDataCommentUser|null,
+ *     text: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsGetDataCommentUser array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsGetDataAttachment array{
+ *     id: int,
+ *     name: string,
+ *     description: string|null,
+ *     format: string,
+ *     url: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsGetDataAuthor array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsListResponse array{
+ *     data: list<ChecklistsListRow>,
+ *     meta: ChecklistsListMeta,
+ * }
+ * @phpstan-type ChecklistsListRow array{
+ *     id: int,
+ *     external_id: string|null,
+ *     title: string,
+ *     description: string|null,
+ *     type: string,
+ *     status: string,
+ *     priority: string,
+ *     min_score: int|null,
+ *     score_percent: int,
+ *     template_id: int|null,
+ *     author_id: int|null,
+ *     locations: list<int>,
+ *     departments: list<int>,
+ *     positions: list<int>,
+ *     user_filters: list<int>,
+ *     date_start: string|null,
+ *     date_end: string|null,
+ *     time_start: string|null,
+ *     time_end: string|null,
+ *     timezone: string|null,
+ *     time_notify: string|null,
+ *     req_approve: bool,
+ *     req_notify: bool,
+ *     geofence: bool,
+ *     gallery: bool,
+ *     is_keep_status: bool,
+ *     time_worked: int,
+ *     started_at: string|null,
+ *     completed_at: string|null,
+ *     created_at: string,
+ *     updated_at: string,
+ *     items?: list<ChecklistsListRowItem>,
+ *     managers?: list<ChecklistsListRowManager>,
+ *     users?: list<EmployeeShort>,
+ *     issues?: list<ChecklistsListRowIssue>,
+ *     comments?: list<ChecklistsListRowComment>,
+ *     attachments?: list<ChecklistsListRowAttachment>,
+ *     author?: ChecklistsListRowAuthor|null,
+ * }
+ * @phpstan-type ChecklistsListRowItem array{
+ *     id: int,
+ *     section: string|null,
+ *     title: string,
+ *     type: string,
+ *     is_required: bool,
+ *     photos: int,
+ *     geofence: bool,
+ *     time_start: string|null,
+ *     time_end: string|null,
+ *     min_number: int|null,
+ *     max_number: int|null,
+ *     value: mixed,
+ *     note: string|null,
+ *     score: int,
+ *     is_completed: bool,
+ *     completed_at: string|null,
+ *     user: ChecklistsListRowItemUser|null,
+ *     latitude: float|null,
+ *     longitude: float|null,
+ *     has_issue: bool,
+ *     issue: string|null,
+ *     attachments: list<ChecklistsListRowItemAttachment>,
+ * }
+ * @phpstan-type ChecklistsListRowItemUser array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsListRowItemAttachment array{
+ *     id: int,
+ *     name: string,
+ *     description: string|null,
+ *     format: string,
+ *     url: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsListRowManager array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ *     status: string,
+ *     updated_at: string,
+ * }
+ * @phpstan-type ChecklistsListRowIssue array{
+ *     id: int,
+ *     item_id: int,
+ *     stage: string,
+ *     severity: string,
+ *     description: string|null,
+ *     reporter_id: int|null,
+ *     assignee_id: int|null,
+ *     due_date: string|null,
+ *     resolved_note: string|null,
+ *     resolved_at: string|null,
+ *     resolved_by: int|null,
+ *     verified_at: string|null,
+ *     verified_by: int|null,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsListRowComment array{
+ *     id: int,
+ *     parent_id: int|null,
+ *     user: ChecklistsListRowCommentUser|null,
+ *     text: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsListRowCommentUser array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsListRowAttachment array{
+ *     id: int,
+ *     name: string,
+ *     description: string|null,
+ *     format: string,
+ *     url: string,
+ *     created_at: string,
+ * }
+ * @phpstan-type ChecklistsListRowAuthor array{
+ *     id: int,
+ *     external_id: string|null,
+ *     code: string|null,
+ *     first_name: string,
+ *     middle_name: string|null,
+ *     last_name: string,
+ * }
+ * @phpstan-type ChecklistsListMeta array{
+ *     per_page: int,
+ *     next_cursor: string|null,
+ *     prev_cursor: string|null,
+ * }
+ * @phpstan-type DepartmentsDeleteResponse array{
+ *     data: DeleteOutcome,
  * }
  * @phpstan-type DepartmentsGetResponse array{
  *     data: DepartmentsGetData,
@@ -178,11 +523,6 @@ namespace Clockster\Generated;
  * }
  * @phpstan-type DepartmentsUpsertResponse array{
  *     data: list<UpsertOutcome>,
- * }
- * @phpstan-type UpsertOutcome array{
- *     external_id: string|null,
- *     id: int,
- *     result: string,
  * }
  * @phpstan-type DocumentsDeleteResponse array{
  *     data: DeleteOutcome,

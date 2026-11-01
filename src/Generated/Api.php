@@ -21,6 +21,9 @@ abstract class Api
     /** The operations of `$clockster->attendance`. */
     public readonly Attendance $attendance;
 
+    /** The operations of `$clockster->checklists`. */
+    public readonly Checklists $checklists;
+
     /** The operations of `$clockster->departments`. */
     public readonly Departments $departments;
 
@@ -63,6 +66,7 @@ abstract class Api
     public function __construct(protected readonly Caller $caller)
     {
         $this->attendance = new Attendance($caller);
+        $this->checklists = new Checklists($caller);
         $this->departments = new Departments($caller);
         $this->documents = new Documents($caller);
         $this->files = new Files($caller);
