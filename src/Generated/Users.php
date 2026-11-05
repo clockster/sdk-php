@@ -57,8 +57,9 @@ final class Users
      * - Their sessions end immediately and their phone is unpaired.
      * - Every terminal at their locations is told to forget their face. That is sent once and
      *   not retried, so a terminal that is offline at the time keeps admitting them.
-     * - **Requests still waiting on them to approve are cancelled**, not just their own. Dismiss
-     *   a manager and their team's pending vacation requests are cancelled with them.
+     * - Their own pending requests are cancelled. **A request still waiting on them to approve
+     *   skips their turn** and moves on to the next approver; it is cancelled only when they
+     *   were the last approver left to decide. Approvals they already gave stand.
      * - An offboarding process starts, if the company has one configured.
      * - `date_leave` is filled in with today's date if it was empty.
      *

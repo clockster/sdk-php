@@ -35,9 +35,10 @@ final class WebhooksEvent
     public const TASK_COMPLETED = 'task.completed';
     public const TASK_APPROVED = 'task.approved';
     public const TASK_REJECTED = 'task.rejected';
+    public const TASK_REOPENED = 'task.reopened';
     public const TASK_DELETED = 'task.deleted';
 
-    /** @return list<'user.created'|'user.updated'|'user.deleted'|'user.restored'|'user.purged'|'location.created'|'location.updated'|'location.deleted'|'department.created'|'department.updated'|'department.deleted'|'position.created'|'position.updated'|'position.deleted'|'task.created'|'task.completed'|'task.approved'|'task.rejected'|'task.deleted'> */
+    /** @return list<'user.created'|'user.updated'|'user.deleted'|'user.restored'|'user.purged'|'location.created'|'location.updated'|'location.deleted'|'department.created'|'department.updated'|'department.deleted'|'position.created'|'position.updated'|'position.deleted'|'task.created'|'task.completed'|'task.approved'|'task.rejected'|'task.reopened'|'task.deleted'> */
     public static function values(): array
     {
         return [
@@ -59,6 +60,7 @@ final class WebhooksEvent
             self::TASK_COMPLETED,
             self::TASK_APPROVED,
             self::TASK_REJECTED,
+            self::TASK_REOPENED,
             self::TASK_DELETED,
         ];
     }

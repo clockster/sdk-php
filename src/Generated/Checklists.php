@@ -139,11 +139,10 @@ final class Checklists
      * Deletes a checklist nobody has touched, and its discussion.
      *
      * **Refused once anybody has worked on it** — 409, `checklist_locked`: it was started or
-     * is past due, an item was answered, it or one of its items carries a file (the author's
-     * reference files included), or it has an issue or a comment. One with `is_keep_status`
-     * never turns past due, so it stays deletable after its dates until somebody works on it.
-     * The refusal is final; reschedule under a new `external_id` instead. A checklist the web
-     * app or a template issued with files therefore cannot be deleted here.
+     * is past due, an item was answered or carries a file, or it has an issue or a comment.
+     * Files on the checklist itself lock nothing, whoever uploaded them, and go with it. One
+     * with `is_keep_status` never turns past due, so it stays deletable after its dates until
+     * somebody works on it. The refusal is final; reschedule under a new `external_id` instead.
      *
      * A `404` on a repeated delete means it is gone. The id comes from the create answer or
      * from `GET /company/v3/checklists?external_ids=`. A deletion is not visible to polling

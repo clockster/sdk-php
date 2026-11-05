@@ -51,7 +51,7 @@ namespace Clockster\Generated;
  * @phpstan-type UsersRole 'admin'|'employee'
  * @phpstan-type UsersStatus 'active'|'dismissed'|'all'
  * @phpstan-type WebhooksDeliveriesInclude 'payload'
- * @phpstan-type WebhooksEvent 'user.created'|'user.updated'|'user.deleted'|'user.restored'|'user.purged'|'location.created'|'location.updated'|'location.deleted'|'department.created'|'department.updated'|'department.deleted'|'position.created'|'position.updated'|'position.deleted'|'task.created'|'task.completed'|'task.approved'|'task.rejected'|'task.deleted'
+ * @phpstan-type WebhooksEvent 'user.created'|'user.updated'|'user.deleted'|'user.restored'|'user.purged'|'location.created'|'location.updated'|'location.deleted'|'department.created'|'department.updated'|'department.deleted'|'position.created'|'position.updated'|'position.deleted'|'task.created'|'task.completed'|'task.approved'|'task.rejected'|'task.reopened'|'task.deleted'
  * @phpstan-type MeResponse array{
  *     data: MeData,
  * }
